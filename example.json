@@ -1,0 +1,95 @@
+{
+    "uniquePrefix": "some-unuique-prefix",
+    "wraps": {
+        "docker": {
+            "basedOn": {
+                "name": "path",
+                "tag": "latest",
+                "precreate": false
+            },
+            "dockerfile": "path",
+            "build": {
+                "context": "path"
+            },
+            "run": {
+                "options": ["--interactive=\"true\""],
+                "interactive": true,
+                "entrypoint":{
+                    "tool": "bash"
+                }
+            },
+            "stop": {
+                "signal": "SIGTERM",
+                "timeout": 30
+            },
+            "clean": [
+                "echo \"Cleaning up docker environment\""
+            ]
+        },
+        "docker-1": {
+            "basedOn": {
+                "name": "docker",
+                "tag": "latest",
+                "precreate": true,
+                "asAbstract": true
+            },
+            "build": {
+                "run": {
+                    "before": [
+                        "echo \"COMMAND BEFORE docker-interactive\""
+                    ],
+                    "after": [
+                        "echo \"COMMAND AFTER docker-interactive\""
+                    ]
+                }
+            }
+        },
+        "docker-interactive": {
+            "dockerfile": "path",
+            "basedOn": {
+                "name": "docker",
+                "tag": "latest",
+                "precreate": true,
+                "asAbstract": true
+            },
+            "build": {
+                "context": "path",
+                "run": {
+                    "before": [
+                        "echo \"COMMAND BEFORE docker-interactive\""
+                    ],
+                    "after": [
+                        "echo \"COMMAND AFTER docker-interactive\""
+                    ]
+                }
+            },
+            "run": {
+                "interactive": false,
+                "volumes": [
+                    {
+                        "destination": "string",
+                        "source": "a",
+                        "readonly": true,    
+                        "nocopy": true
+                    }
+                ],
+                "entrypoint": {
+                    "tool": "python as example, or bush",
+                    "args": [
+                        "-a"
+                    ],
+                    "commands": [
+                        "a",
+                        "echo \"COMMAND 2\"",
+                        "c",
+                        {
+                            "value": "c1",
+                            "action": "remove",
+                            "continueInError": false
+                        }
+                    ]
+                }
+            }
+        }
+    }
+}
