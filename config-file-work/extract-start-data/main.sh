@@ -247,8 +247,8 @@ function convertVolumesToOptions {
         volume_data_destination=$(echo "$volume_data" | jq -r ".destination")
         [ $? -ne 0 ] && throwError 1 "Error within jq getting destination of volume"
 
-        
-        volume_string="--mount type=volume,src=\"$volume_data_source\",dst=\"$volume_data_destination\""
+        # TODO add change bind or volume
+        volume_string="--mount type=bind,src=\"$volume_data_source\",dst=\"$volume_data_destination\""
 
         
         is_exist=$(echo "$volume_data" | jq -r "has(\"readonly\")")
