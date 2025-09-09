@@ -49,6 +49,9 @@ function throwError {
         123)
             echo "Problem with getAllWrapNames function" >&2
             ;;
+        124)
+            echo "Problem with getSequence function" >&2
+            ;;
         *)
             echo "Unknown error" >&2
             exit 1
