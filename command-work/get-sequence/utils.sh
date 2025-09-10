@@ -43,6 +43,9 @@ function throwError {
         121)
             echo "<- Problem with addToSequence function" >&2
             ;;
+        122)
+            echo "No wrap found" >&2
+            ;;
         *)
             echo "Unknown error" >&2
             exit 1

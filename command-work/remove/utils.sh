@@ -49,6 +49,9 @@ function throwError {
         123)
             echo "Error during clean process" >&2
             ;;
+        124)
+            echo "No wrap found" >&2
+            ;;
         *)
             echo "Unknown error" >&2
             exit 1

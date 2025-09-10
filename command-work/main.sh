@@ -49,7 +49,7 @@ function commandWork {
         "remove")
             forRemove
             ;;
-        "init" | "start" | "stop" | "kill")
+        "init" | "start" | "stop" | "kill" | "resolve-sequence")
             forOther
             ;;
         *)
@@ -220,6 +220,17 @@ function forOther {
             )
             exit_code=$?
             [ $exit_code -ne 0 ] && throwError 114 "Exit code was: $exit_code"
+            ;;
+        "resolve-sequence")
+            file_to_source="$current_dir/resolve-sequence/main.sh"
+            source "$file_to_source"
+            [ $? -ne 0 ] && throwError 111 "$file_to_source"
+
+            (
+                resolveSequence "$scripts_dir" "$file_with_config" "$unique_prefix" "$wrap_name" "./envs-copy.sh"
+            )
+            exit_code=$?
+            [ $exit_code -ne 0 ] && throwError 125 "Exit code was: $exit_code"
             ;;
         "start")
             file_to_source="$current_dir/start/main.sh"

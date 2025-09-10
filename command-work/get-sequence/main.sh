@@ -66,6 +66,10 @@ function getItemsForSequence {
     wrap=$(findWrap "$file_with_config" "$wrap_name")
     [ $? -ne 0 ] && throwError 112 "$wrap"
 
+    if [[ -z "$wrap" ]]; then
+        throwError 122 "Wrap \"$wrap_name\" not found"
+    fi
+
     based_on=$(getBasedOn "$wrap")
     [ $? -ne 0 ] && throwError 113 "$based_on"
 

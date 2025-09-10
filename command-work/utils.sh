@@ -52,6 +52,9 @@ function throwError {
         124)
             echo "Problem with getSequence function" >&2
             ;;
+        125)
+            echo "Problem with resolveSequence function" >&2
+            ;;
         *)
             echo "Unknown error" >&2
             exit 1
