@@ -179,6 +179,7 @@ You can use relative path depending where your `main.sh` is located. You are fre
 |---|---|---|
 | `get name` | Retrieves the name of the image or container associated with the specified configuration and wrap. | `./main.sh get name image <wrap_name>`<br>or<br>`./main.sh get name container <wrap_name>` |
 | `get sequence` | Retrieves the basedOn sequence of some wrap. | `./main.sh get sequence <wrap_name>` |
+| `resolve-sequence` | Makes a new file with resolved sequence based on mentioned wrap. | `./main.sh resolve-sequence <wrap_name> <file_for_new_config>` |
 | `remove` | Removes the image or container associated with the specified configuration and wrap. | `./main.sh remove image <wrap_name>`<br>or<br>`./main.sh remove container <wrap_name>`<br>or<br>`./main.sh remove both <wrap_name>`<br>or<br>`./main.sh remove all <container\|image>`<br>or<br>`./main.sh remove all <container\|image\|both>`|
 | `init` | Initializes resources (such as images or containers) based on the configuration and wrap. | `./main.sh init <wrap_name>` |
 | `start` | Starts the container or service defined by the configuration and wrap. | `./main.sh start <wrap_name>` |

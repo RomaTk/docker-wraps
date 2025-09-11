@@ -202,6 +202,7 @@ function forOther {
     local file_to_source
     local exit_code
     local wrap_name
+    local new_file_with_config
 
     if [[ ${#command_as_args[@]} -lt 2 ]]; then
         throwError 120 "Length is less than 2"
@@ -222,12 +223,18 @@ function forOther {
             [ $exit_code -ne 0 ] && throwError 114 "Exit code was: $exit_code"
             ;;
         "resolve-sequence")
+            if [[ ${#command_as_args[@]} -lt 3 ]]; then
+                throwError 120 "Length is less than 3"
+            fi
+
+            new_file_with_config="${command_as_args[2]}"
+
             file_to_source="$current_dir/resolve-sequence/main.sh"
             source "$file_to_source"
             [ $? -ne 0 ] && throwError 111 "$file_to_source"
 
             (
-                resolveSequence "$scripts_dir" "$file_with_config" "$unique_prefix" "$wrap_name" "./envs-copy.sh"
+                resolveSequence "$scripts_dir" "$file_with_config" "$unique_prefix" "$wrap_name" "$new_file_with_config"
             )
             exit_code=$?
             [ $exit_code -ne 0 ] && throwError 125 "Exit code was: $exit_code"
