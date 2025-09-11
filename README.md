@@ -79,7 +79,6 @@ Used when image not created and just build options is forwarded, can be used onl
 
 Means that wrap will be used, so uniquePrefix will be added, properties forwarded.
 
-
 ## Config file
 
 ```json
@@ -87,12 +86,7 @@ Means that wrap will be used, so uniquePrefix will be added, properties forwarde
     "uniquePrefix": "string", // all images and containers created from this file will have this prefix. It is expected that all images with this prefix created from this file
     "wraps": {
         "wrapName": {
-            "basedOn": {
-                "name": "string", // name of image, if expected to be done from this file uniquePrefix should not be added
-                "tag": "string", // tag for image, if expected to be created should be latest
-                "precreate": "boolean", // optional, is to create from this file. By default - false
-                "asAbstract": "boolean", // optional, by default - false, meaning is to extend only values
-            }, // optional, inform what will be set as BASED_ON argument
+            "basedOn": "basedOn config schema OR array of basedOn config schemas", // optional, inform what will be set as BASED_ON argument
             "dockerfile": "string", //optional, path to dockerfile
             "build": {
                 "context": "string", // path to context, optional if can be extracted from basedOn
@@ -160,6 +154,17 @@ Means that wrap will be used, so uniquePrefix will be added, properties forwarde
 }
 ```
 
+### BasedOn config schema
+
+```json
+{
+    "name": "string", // name of image, if expected to be done from this file uniquePrefix should not be added
+    "tag": "string", // tag for image, if expected to be created should be latest
+    "precreate": "boolean", // optional, is to create from this file. By default - false
+    "asAbstract": "boolean", // optional, by default - false, meaning is to extend only values
+}
+```
+
 ## How to use
 
 Commands below use `main.sh`, so that file you need to create using `example.sh` in the folder where you would like to execute it.
@@ -172,7 +177,9 @@ You can use relative path depending where your `main.sh` is located. You are fre
 
 | Command | Explanation | Syntax |
 |---|---|---|
-| `get` | Retrieves the name of the image or container associated with the specified configuration and wrap. | `./main.sh get name image <wrap_name>`<br>or<br>`./main.sh get name container <wrap_name>` |
+| `get name` | Retrieves the name of the image or container associated with the specified configuration and wrap. | `./main.sh get name image <wrap_name>`<br>or<br>`./main.sh get name container <wrap_name>` |
+| `get sequence` | Retrieves the basedOn sequence of some wrap. | `./main.sh get sequence <wrap_name>` |
+| `resolve-sequence` | Makes a new file with resolved sequence based on mentioned wrap. | `./main.sh resolve-sequence <wrap_name> <file_for_new_config>` |
 | `remove` | Removes the image or container associated with the specified configuration and wrap. | `./main.sh remove image <wrap_name>`<br>or<br>`./main.sh remove container <wrap_name>`<br>or<br>`./main.sh remove both <wrap_name>`<br>or<br>`./main.sh remove all <container\|image>`<br>or<br>`./main.sh remove all <container\|image\|both>`|
 | `init` | Initializes resources (such as images or containers) based on the configuration and wrap. | `./main.sh init <wrap_name>` |
 | `start` | Starts the container or service defined by the configuration and wrap. | `./main.sh start <wrap_name>` |

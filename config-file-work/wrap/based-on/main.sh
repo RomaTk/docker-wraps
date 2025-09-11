@@ -19,8 +19,8 @@ function getBasedOn {
         exit 0
     fi
 
-    if [[ "$type" != "object" ]]; then
-        echo "BasedOn is not an object" >&2
+    if [[ "$type" != "object" && "$type" != "array" ]]; then
+        echo "BasedOn is not an object nor an array" >&2
         exit 1
     fi
 

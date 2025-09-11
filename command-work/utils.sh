@@ -49,6 +49,18 @@ function throwError {
         123)
             echo "Problem with getAllWrapNames function" >&2
             ;;
+        124)
+            echo "Problem with getSequence function" >&2
+            ;;
+        125)
+            echo "Problem with resolveSequence function" >&2
+            ;;
+        126)
+            echo "Failed to create temporary file" >&2
+            ;;
+        127)
+            echo "Failed to remove temporary file" >&2
+            ;;
         *)
             echo "Unknown error" >&2
             exit 1

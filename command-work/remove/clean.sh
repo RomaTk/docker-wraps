@@ -23,6 +23,10 @@ function clean {
     wrap=$(findWrap "$file_with_config" "$wrap_name")
     [ $? -ne 0 ] && throwError 118 "$wrap"
 
+    if [[ -z "$wrap" ]]; then
+        throwError 124 "Wrap \"$wrap_name\" not found"
+    fi
+
     clean_array=$(getClean "$wrap")
     [ $? -ne 0 ] && throwError 119 "$clean_array"
 

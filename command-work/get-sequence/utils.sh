@@ -14,42 +14,36 @@ function throwError {
             echo "<- Problem with sourcing" >&2
             ;;
         112)
-            echo "Unique prefix or wrap name is empty" >&2
+            echo "<- Problem within findWrap function" >&2
             ;;
         113)
-            echo "Failed to get container name" >&2
+            echo "<- Problem within getBasedOn function" >&2
             ;;
         114)
-            echo "Error within stopOrKill function" >&2
+            echo "<- Problem with getSequence function" >&2
             ;;
         115)
-            echo "Error within \"docker container rm\" command" >&2
+            echo "<- Problem with goThrewSequence function" >&2
             ;;
         116)
-            echo "Failed to get image name" >&2
+            echo "<- Problem with getIsPrecreate function" >&2
             ;;
         117)
-            echo "Error within \"docker image rm\" command" >&2
+            echo "<- Problem with getBasedOnName function" >&2
             ;;
         118)
-            echo "Failed to get wrap with findWrap function" >&2
+            echo "<- Problem with getBasedOnTag function" >&2
             ;;
         119)
-            echo "Failed to get clean array with getClean function" >&2
+            echo "<- Problem with sortSequence function" >&2
             ;;
         120)
-            echo "Problem with extracting length of clean array" >&2
+            echo "<- Problem with isInSequenceAlready function" >&2
             ;;
         121)
-            echo "Error while executing some clean command" >&2
+            echo "<- Problem with addToSequence function" >&2
             ;;
         122)
-            echo "Error within isToDoClean function" >&2
-            ;;
-        123)
-            echo "Error during clean process" >&2
-            ;;
-        124)
             echo "No wrap found" >&2
             ;;
         *)

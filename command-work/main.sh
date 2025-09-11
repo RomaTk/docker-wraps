@@ -49,6 +49,9 @@ function commandWork {
         "remove")
             forRemove
             ;;
+        "resolve-sequence")
+            forResolveSequence
+            ;;
         "init" | "start" | "stop" | "kill")
             forOther
             ;;
@@ -69,14 +72,21 @@ function forGet {
     local type
     local wrap_name
 
-    if [[ ${#command_as_args[@]} -lt 4 ]]; then
-        throwError 120 "Length is less than 4"
+    if [[ ${#command_as_args[@]} -lt 3 ]]; then
+        throwError 120 "Length is less than 3"
+    fi
+    what="${command_as_args[1]}"
+    if [[ "$what" == "name" ]]; then
+        if [[ ${#command_as_args[@]} -lt 4 ]]; then
+            throwError 120 "Length is less than 4"
+        fi
+        type="${command_as_args[2]}"
+        wrap_name="${command_as_args[3]}"
+    else
+        wrap_name="${command_as_args[2]}"
     fi
 
-
-    what="${command_as_args[1]}"
-    type="${command_as_args[2]}"
-    wrap_name="${command_as_args[3]}"
+   
 
     case $what in
         "name")
@@ -89,6 +99,16 @@ function forGet {
             
             exit_code=$?
             [ $exit_code -ne 0 ] && throwError 117 "Exit code was: $exit_code"
+            ;;
+        "sequence")
+            file_to_source="$current_dir/get-sequence/main.sh"
+            source "$file_to_source"
+            [ $? -ne 0 ] && throwError 111 "$file_to_source"
+            (
+                getSequence "$scripts_dir" "$file_with_config" "$unique_prefix" "$wrap_name"
+            )
+            exit_code=$?
+            [ $exit_code -ne 0 ] && throwError 124 "Exit code was: $exit_code"
             ;;
         *)
             throwError 121 "Mentioned: $what"
@@ -185,12 +205,26 @@ function forOther {
     local file_to_source
     local exit_code
     local wrap_name
+    local new_file_with_config
+    local last_action
 
     if [[ ${#command_as_args[@]} -lt 2 ]]; then
         throwError 120 "Length is less than 2"
     fi
 
     wrap_name="${command_as_args[1]}"
+
+    file_to_source="$current_dir/resolve-sequence/main.sh"
+    source "$file_to_source"
+    [ $? -ne 0 ] && throwError 111 "$file_to_source"
+
+    new_file_with_config="$(mktemp)"
+    [ $? -ne 0 ] && throwError 126 "$new_file_with_config"
+    (
+        resolveSequence "$scripts_dir" "$file_with_config" "$unique_prefix" "$wrap_name" "$new_file_with_config"
+    )
+    exit_code=$?
+    [ $exit_code -ne 0 ] && throwError 125 "Exit code was: $exit_code"
 
     case ${command_as_args[0]} in
         "init")
@@ -199,7 +233,7 @@ function forOther {
             [ $? -ne 0 ] && throwError 111 "$file_to_source"
 
             (
-                init "$scripts_dir" "$file_with_config" "$unique_prefix" "$wrap_name"
+                init "$scripts_dir" "$new_file_with_config" "$unique_prefix" "$wrap_name"
             )
             exit_code=$?
             [ $exit_code -ne 0 ] && throwError 114 "Exit code was: $exit_code"
@@ -210,7 +244,7 @@ function forOther {
             [ $? -ne 0 ] && throwError 111 "$file_to_source"
 
             (
-                start "$scripts_dir" "$file_with_config" "$unique_prefix" "$wrap_name"
+                start "$scripts_dir" "$new_file_with_config" "$unique_prefix" "$wrap_name"
             )
             exit_code=$?
             [ $exit_code -ne 0 ] && throwError 115 "Exit code was: $exit_code"
@@ -221,7 +255,7 @@ function forOther {
             [ $? -ne 0 ] && throwError 111 "$file_to_source"
 
             (
-                stopOrKill "$scripts_dir" "$file_with_config" "$unique_prefix" "$wrap_name" "stop"
+                stopOrKill "$scripts_dir" "$new_file_with_config" "$unique_prefix" "$wrap_name" "stop"
             )
             exit_code=$?
             [ $exit_code -ne 0 ] && throwError 118 "Exit code was: $exit_code"
@@ -232,7 +266,7 @@ function forOther {
             [ $? -ne 0 ] && throwError 111 "$file_to_source"
 
             (
-                stopOrKill "$scripts_dir" "$file_with_config" "$unique_prefix" "$wrap_name" "kill"
+                stopOrKill "$scripts_dir" "$new_file_with_config" "$unique_prefix" "$wrap_name" "kill"
             )
             exit_code=$?
             [ $exit_code -ne 0 ] && throwError 118 "Exit code was: $exit_code"
@@ -241,4 +275,32 @@ function forOther {
             throwError 113 "Tried command: $command"
             ;;
     esac
+
+    last_action=$(rm -f "$new_file_with_config")
+    [ $? -ne 0 ] && throwError 127 "$last_action"
+}
+
+
+function forResolveSequence {
+    local file_to_source
+    local exit_code
+    local wrap_name
+    local new_file_with_config
+
+    if [[ ${#command_as_args[@]} -lt 3 ]]; then
+        throwError 120 "Length is less than 3"
+    fi
+
+    wrap_name="${command_as_args[1]}"
+    new_file_with_config="${command_as_args[2]}"
+
+    file_to_source="$current_dir/resolve-sequence/main.sh"
+    source "$file_to_source"
+    [ $? -ne 0 ] && throwError 111 "$file_to_source"
+
+    (
+        resolveSequence "$scripts_dir" "$file_with_config" "$unique_prefix" "$wrap_name" "$new_file_with_config"
+    )
+    exit_code=$?
+    [ $exit_code -ne 0 ] && throwError 125 "Exit code was: $exit_code"
 }
