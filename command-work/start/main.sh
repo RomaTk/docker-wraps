@@ -62,44 +62,43 @@ function start {
 
     running_state=$(docker inspect -f '{{.State.Running}}' "${container_name}" 2>/dev/null)    
 
-    if [[ "$running_state" != "true" ]]; then
-        # INIT CONTAINER IF IT IS NOT RUNNING
+    # INIT IMAGE
 
-        file_to_source="$scripts_dir/command-work/init/main.sh"
-        source "$file_to_source"
-        [ $? -ne 0 ] && throwError 111 "$file_to_source"
+    file_to_source="$scripts_dir/command-work/init/main.sh"
+    source "$file_to_source"
+    [ $? -ne 0 ] && throwError 111 "$file_to_source"
 
-        (
-            init "$scripts_dir" "$file_with_config" "$unique_prefix" "$wrap_name"
-        )
-        exit_code=$?
-        [ $exit_code -ne 0 ] && throwError 166 "Exit code was: $exit_code"
+    (
+        init "$scripts_dir" "$file_with_config" "$unique_prefix" "$wrap_name"
+    )
+    exit_code=$?
+    [ $exit_code -ne 0 ] && throwError 166 "Exit code was: $exit_code"
 
-        if [[ "$running_state" == "false" ]]; then
-            is_same_image=$(isSameImageId)
-            [ $? -ne 0 ] && throwError 170 "$is_same_image"
+    if [[ "$running_state" == "false" || "$running_state" == "true" ]]; then
+        # Do only if container exists
 
-            if [[ "$is_same_image" == "false" ]]; then
-                file_to_source="$scripts_dir/command-work/remove/main.sh"
-                source "$file_to_source"
-                [ $? -ne 0 ] && throwError 111 "$file_to_source"
+        is_same_image=$(isSameImageId)
+        [ $? -ne 0 ] && throwError 170 "$is_same_image"
 
-                (
-                    remove "$scripts_dir" "$file_with_config" "$unique_prefix" "$wrap_name" "container"
-                )
-                exit_code=$?
-                [ $exit_code -ne 0 ] && throwError 171 "Exit code was: $exit_code"
+        if [[ "$is_same_image" == "false" ]]; then
+            file_to_source="$scripts_dir/command-work/remove/main.sh"
+            source "$file_to_source"
+            [ $? -ne 0 ] && throwError 111 "$file_to_source"
 
-                (
-                    start "$scripts_dir" "$file_with_config" "$unique_prefix" "$wrap_name"
-                )
-                exit_code=$?
-                [ $exit_code -ne 0 ] && throwError 172 "Exit code was: $exit_code"
-                
-                exit 0
-            fi
+            (
+                remove "$scripts_dir" "$file_with_config" "$unique_prefix" "$wrap_name" "container"
+            )
+            exit_code=$?
+            [ $exit_code -ne 0 ] && throwError 171 "Exit code was: $exit_code"
+
+            (
+                start "$scripts_dir" "$file_with_config" "$unique_prefix" "$wrap_name"
+            )
+            exit_code=$?
+            [ $exit_code -ne 0 ] && throwError 172 "Exit code was: $exit_code"
+            
+            exit 0
         fi
-
     fi
 
     if [[ "$running_state" == "true" ]]; then

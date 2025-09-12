@@ -18,16 +18,19 @@ Why `bash` - not to install unnecessary packages and keep the environment clean.
 
 ### start
 
-1) If container running
-    1) Do exec on container with `run.args` and `run.commands` and `other same options as for run `
-2) If container not running
-    1) Init wrap
-    2) If container image is not the same as for image created by wrap
-        1) Remove the container with all **basedOn wraps taking into account**
-    3) If container exist
-        1) Start container with all **basedOn wraps taking into account**
-    4) If container doesn`t exist
-        1) Run container with all **basedOn wraps taking into account**
+1) Init image
+2) If container doesn`t exist
+    1) Run container with all **basedOn wraps taking into account**
+3) If container exists
+    1) Compare container image id with current image id
+    2) If it is different
+        1) Remove container with all **basedOn wraps taking into account**
+        2) Do all steps as for container not existing
+    3) If it is same
+        1) If container running
+            1) Do exec on container with `run.args` and `run.commands` and `other same options as for run `
+        2) If container not running
+            1) Start container with all **basedOn wraps taking into account**
 
 ### stop
 
@@ -79,6 +82,11 @@ Used when image not created and just build options is forwarded, can be used onl
 
 Means that wrap will be used, so uniquePrefix will be added, properties forwarded.
 
+### Array of basedOn config schemas
+
+If you mention array - not the object in the `basedOn` property - it will be treated as sequence of basedOn, where the first element is the closest to current wrap (so it will be used as BASED_ON argument), and the last one - the farthest. Moreover based on, elements closest to current wrap have higher priority than basedOns inside another basedOn wrap.
+
+You can use `get sequence` command to see the full sequence of basedOns. Or resolve it to a new file using `resolve-sequence` command to see config by which the wrap will be created.
 
 ## Config file
 
@@ -87,12 +95,7 @@ Means that wrap will be used, so uniquePrefix will be added, properties forwarde
     "uniquePrefix": "string", // all images and containers created from this file will have this prefix. It is expected that all images with this prefix created from this file
     "wraps": {
         "wrapName": {
-            "basedOn": {
-                "name": "string", // name of image, if expected to be done from this file uniquePrefix should not be added
-                "tag": "string", // tag for image, if expected to be created should be latest
-                "precreate": "boolean", // optional, is to create from this file. By default - false
-                "asAbstract": "boolean", // optional, by default - false, meaning is to extend only values
-            }, // optional, inform what will be set as BASED_ON argument
+            "basedOn": "basedOn config schema OR array of basedOn config schemas", // optional, inform what will be set as BASED_ON argument
             "dockerfile": "string", //optional, path to dockerfile
             "build": {
                 "context": "string", // path to context, optional if can be extracted from basedOn
@@ -123,7 +126,7 @@ Means that wrap will be used, so uniquePrefix will be added, properties forwarde
                         "readonly": "boolean", //optional   
                         "nocopy": "boolean" //optional
                     }
-                ], // optional, volumes for run command
+                ], // optional, volumes for run command (it is only type=bind for now)
                 "entrypoint": {
                     "tool": "string|null", //optional
                     "args": [
@@ -160,6 +163,17 @@ Means that wrap will be used, so uniquePrefix will be added, properties forwarde
 }
 ```
 
+### BasedOn config schema
+
+```json
+{
+    "name": "string", // name of image, if expected to be done from this file uniquePrefix should not be added
+    "tag": "string", // tag for image, if expected to be created should be latest
+    "precreate": "boolean", // optional, is to create from this file. By default - false
+    "asAbstract": "boolean", // optional, by default - false, meaning is to extend only values
+}
+```
+
 ## How to use
 
 Commands below use `main.sh`, so that file you need to create using `example.sh` in the folder where you would like to execute it.
@@ -172,7 +186,9 @@ You can use relative path depending where your `main.sh` is located. You are fre
 
 | Command | Explanation | Syntax |
 |---|---|---|
-| `get` | Retrieves the name of the image or container associated with the specified configuration and wrap. | `./main.sh get name image <wrap_name>`<br>or<br>`./main.sh get name container <wrap_name>` |
+| `get name` | Retrieves the name of the image or container associated with the specified configuration and wrap. | `./main.sh get name image <wrap_name>`<br>or<br>`./main.sh get name container <wrap_name>` |
+| `get sequence` | Retrieves the basedOn sequence of some wrap. | `./main.sh get sequence <wrap_name>` |
+| `resolve-sequence` | Makes a new file with resolved sequence based on mentioned wrap. | `./main.sh resolve-sequence <wrap_name> <file_for_new_config>` |
 | `remove` | Removes the image or container associated with the specified configuration and wrap. | `./main.sh remove image <wrap_name>`<br>or<br>`./main.sh remove container <wrap_name>`<br>or<br>`./main.sh remove both <wrap_name>`<br>or<br>`./main.sh remove all <container\|image>`<br>or<br>`./main.sh remove all <container\|image\|both>`|
 | `init` | Initializes resources (such as images or containers) based on the configuration and wrap. | `./main.sh init <wrap_name>` |
 | `start` | Starts the container or service defined by the configuration and wrap. | `./main.sh start <wrap_name>` |
