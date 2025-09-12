@@ -18,16 +18,19 @@ Why `bash` - not to install unnecessary packages and keep the environment clean.
 
 ### start
 
-1) If container running
-    1) Do exec on container with `run.args` and `run.commands` and `other same options as for run `
-2) If container not running
-    1) Init wrap
-    2) If container image is not the same as for image created by wrap
-        1) Remove the container with all **basedOn wraps taking into account**
-    3) If container exist
-        1) Start container with all **basedOn wraps taking into account**
-    4) If container doesn`t exist
-        1) Run container with all **basedOn wraps taking into account**
+1) Init image
+2) If container doesn`t exist
+    1) Run container with all **basedOn wraps taking into account**
+3) If container exists
+    1) Compare container image id with current image id
+    2) If it is different
+        1) Remove container with all **basedOn wraps taking into account**
+        2) Do all steps as for container not existing
+    3) If it is same
+        1) If container running
+            1) Do exec on container with `run.args` and `run.commands` and `other same options as for run `
+        2) If container not running
+            1) Start container with all **basedOn wraps taking into account**
 
 ### stop
 
@@ -79,6 +82,12 @@ Used when image not created and just build options is forwarded, can be used onl
 
 Means that wrap will be used, so uniquePrefix will be added, properties forwarded.
 
+### Array of basedOn config schemas
+
+If you mention array - not the object in the `basedOn` property - it will be treated as sequence of basedOn, where the first element is the closest to current wrap (so it will be used as BASED_ON argument), and the last one - the farthest. Moreover based on, elements closest to current wrap have higher priority than basedOns inside another basedOn wrap.
+
+You can use `get sequence` command to see the full sequence of basedOns. Or resolve it to a new file using `resolve-sequence` command to see config by which the wrap will be created.
+
 ## Config file
 
 ```json
@@ -117,7 +126,7 @@ Means that wrap will be used, so uniquePrefix will be added, properties forwarde
                         "readonly": "boolean", //optional   
                         "nocopy": "boolean" //optional
                     }
-                ], // optional, volumes for run command
+                ], // optional, volumes for run command (it is only type=bind for now)
                 "entrypoint": {
                     "tool": "string|null", //optional
                     "args": [
