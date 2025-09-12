@@ -119,9 +119,6 @@ function changeBasedOnInWrap {
     wrap="$(echo "$wrap" | jq --argjson newBasedOn "$new_based_on" '.basedOn = $newBasedOn')"
     [ $? -ne 0 ] && throwError 1 "Failed to set new basedOn value"
 
-    echo "$wrap_name"
-    echo "$wrap"
-
     last_action="$(changeWrap "$new_file_with_config" "$wrap_name" "$wrap")"
     [ $? -ne 0 ] && throwError 117 "$last_action"
 
