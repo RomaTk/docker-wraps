@@ -180,9 +180,9 @@ function init {
         run_before_build_compare_2=$(insertRunAfterBuildToRunBeforeBuild "$run_after_build_compare_2" "$run_before_build_compare_2")
         [ $? -ne 0 ] && throwError 166 "$run_before_build_compare_2"
 
-        run_before_build_compare_1=$(echo "$run_before_build_compare_1" | jq -r ".data")
+        run_before_build_compare_1=$(echo "$run_before_build_compare_1" | jq -S -r ".data")
         [ $? -ne 0 ] && throwError 1 "$run_before_build_compare_1"
-        run_before_build_compare_2=$(echo "$run_before_build_compare_2" | jq -r ".data")
+        run_before_build_compare_2=$(echo "$run_before_build_compare_2" | jq -S -r ".data")
         [ $? -ne 0 ] && throwError 1 "$run_before_build_compare_2"
 
 
