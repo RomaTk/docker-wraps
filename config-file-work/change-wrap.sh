@@ -8,6 +8,7 @@ function changeWrap {
     local type
     local last_action
     local command_to_do
+    local new_file_with_config
 
     local key="wraps"
 
@@ -31,7 +32,8 @@ function changeWrap {
 
     command_to_do=".$key.\"$wrap_name\" = \$newWrap"
 
-    last_action=$(jq -r --argjson newWrap "$wrap" "$command_to_do" "$json_file" > ./tmp.json && mv ./tmp.json "$json_file")
+    new_file_with_config="$(mktemp)"
+    last_action=$(jq -r --argjson newWrap "$wrap" "$command_to_do" "$json_file" > "$new_file_with_config" && mv "$new_file_with_config" "$json_file")
     if [ $? -ne 0 ]; then
         echo "Error changing wrap $last_action" >&2
         exit 1
