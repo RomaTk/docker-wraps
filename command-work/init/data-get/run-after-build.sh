@@ -34,7 +34,7 @@ function getRunAfterBuild {
     source "$file_to_source"
     if [ $? -ne 0 ]; then
         echo "Problem with sourcing $file_to_source" >&2
-        exit 111
+        throwError 111
     fi
 
     file_to_source="$config_dir/find-wrap.sh"
@@ -139,17 +139,17 @@ function getRunAfterBuild {
         if [[ "$as_abstract" == "true" ]]; then
 
             abstract_jq_array_commands_some_wrap=$(echo "$all_run_before_builds" | jq -r ".\"$wrap_name\"")
-            [ $? -ne 0 ] && exit 1
+            [ $? -ne 0 ] && throwError 1
             if [[ "$abstract_jq_array_commands_some_wrap" != "null" ]]; then
                 abstract_jq_array_commands=$(echo "$abstract_jq_array_commands" | jq -r ". + $abstract_jq_array_commands_some_wrap")
-                [ $? -ne 0 ] && exit 1
+                [ $? -ne 0 ] && throwError 1
             fi
 
             all_run_before_builds=$(echo "$all_run_before_builds" | jq -r "del(.\"$wrap_name\")")
-            [ $? -ne 0 ] && exit 1
+            [ $? -ne 0 ] && throwError 1
 
             based_on_jq_array=$(echo "$based_on_jq_array" | jq -r ". - [\"$wrap_name\"]")
-            [ $? -ne 0 ] && exit 1
+            [ $? -ne 0 ] && throwError 1
 
             continue
         fi
@@ -159,17 +159,17 @@ function getRunAfterBuild {
         fi
 
         current_object=$(echo "$all_run_before_builds" | jq -r ".\"$wrap_name\"")
-        [ $? -ne 0 ] && exit 1
+        [ $? -ne 0 ] && throwError 1
 
         if [[ "$current_object" == "null" ]]; then
             all_run_before_builds=$(echo "$all_run_before_builds" | jq -r ".\"$wrap_name\" = $abstract_jq_array_commands")
-            [ $? -ne 0 ] && exit 1
+            [ $? -ne 0 ] && throwError 1
         else
             current_object=$(echo "$current_object" | jq -r "$abstract_jq_array_commands + .")
-            [ $? -ne 0 ] && exit 1
+            [ $? -ne 0 ] && throwError 1
 
             all_run_before_builds=$(echo "$all_run_before_builds" | jq -r ".\"$wrap_name\" = $current_object")
-            [ $? -ne 0 ] && exit 1
+            [ $? -ne 0 ] && throwError 1
         fi
 
         abstract_jq_array_commands="[]"
