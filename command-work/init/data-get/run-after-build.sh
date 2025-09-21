@@ -16,11 +16,17 @@ function getRunAfterBuild {
     local is_precreate
     local is_in_array
     local tag
+    local as_abstract
     
     local len
     local i
     
     local based_ons=()
+    local is_abstract=()
+    local is_abstract_jq_array="[]"
+    local abstract_jq_array_commands="[]"
+    local abstract_jq_array_commands_some_wrap
+    local current_object
 
     local based_on_jq_array="[]"
 
@@ -28,7 +34,7 @@ function getRunAfterBuild {
     source "$file_to_source"
     if [ $? -ne 0 ]; then
         echo "Problem with sourcing $file_to_source" >&2
-        exit 111
+        throwError 111
     fi
 
     file_to_source="$config_dir/find-wrap.sh"
@@ -40,6 +46,10 @@ function getRunAfterBuild {
     [ $? -ne 0 ] && throwError 111 "$file_to_source"
 
     file_to_source="$config_dir/wrap/based-on/is-precreate.sh"
+    source "$file_to_source"
+    [ $? -ne 0 ] && throwError 111 "$file_to_source"
+
+    file_to_source="$config_dir/wrap/based-on/as-abstract.sh"
     source "$file_to_source"
     [ $? -ne 0 ] && throwError 111 "$file_to_source"
 
@@ -60,6 +70,7 @@ function getRunAfterBuild {
     [ $? -ne 0 ] && throwError 111 "$file_to_source"
 
     based_ons+=("$wrap_name")
+    is_abstract+=("false")
 
     while true; do 
         
@@ -101,7 +112,11 @@ function getRunAfterBuild {
             break
         fi
 
+        as_abstract=$(getAsAbstract "$based_on")
+        [ $? -ne 0 ] && throwError 136 "$as_abstract"
+
         based_ons+=("$wrap_name")
+        is_abstract+=("$as_abstract")
 
     done
 
@@ -114,6 +129,51 @@ function getRunAfterBuild {
 
         based_on_jq_array=$(echo "$based_on_jq_array" | jq -r ". + [\"${based_ons[$i]}\"]")
         [ $? -ne 0 ] && throwError 152 "$based_on_jq_array"
+    done
+
+    # Resolve abstracts
+    for (( i=$len-1; i>=0; i-- )); do
+        as_abstract=${is_abstract[$i]}
+        wrap_name=${based_ons[$i]}
+
+        if [[ "$as_abstract" == "true" ]]; then
+
+            abstract_jq_array_commands_some_wrap=$(echo "$all_run_before_builds" | jq -r ".\"$wrap_name\"")
+            [ $? -ne 0 ] && throwError 1
+            if [[ "$abstract_jq_array_commands_some_wrap" != "null" ]]; then
+                abstract_jq_array_commands=$(echo "$abstract_jq_array_commands" | jq -r ". + $abstract_jq_array_commands_some_wrap")
+                [ $? -ne 0 ] && throwError 1
+            fi
+
+            all_run_before_builds=$(echo "$all_run_before_builds" | jq -r "del(.\"$wrap_name\")")
+            [ $? -ne 0 ] && throwError 1
+
+            based_on_jq_array=$(echo "$based_on_jq_array" | jq -r ". - [\"$wrap_name\"]")
+            [ $? -ne 0 ] && throwError 1
+
+            continue
+        fi
+
+        if [[ "$abstract_jq_array_commands" == "[]" ]]; then
+            continue
+        fi
+
+        current_object=$(echo "$all_run_before_builds" | jq -r ".\"$wrap_name\"")
+        [ $? -ne 0 ] && throwError 1
+
+        if [[ "$current_object" == "null" ]]; then
+            all_run_before_builds=$(echo "$all_run_before_builds" | jq -r ".\"$wrap_name\" = $abstract_jq_array_commands")
+            [ $? -ne 0 ] && throwError 1
+        else
+            current_object=$(echo "$current_object" | jq -r "$abstract_jq_array_commands + .")
+            [ $? -ne 0 ] && throwError 1
+
+            all_run_before_builds=$(echo "$all_run_before_builds" | jq -r ".\"$wrap_name\" = $current_object")
+            [ $? -ne 0 ] && throwError 1
+        fi
+
+        abstract_jq_array_commands="[]"
+
     done
    
     echo "{ \"basedOnList\": $based_on_jq_array, \"data\": $all_run_before_builds }"

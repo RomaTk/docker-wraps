@@ -164,6 +164,7 @@ function init {
         fi
 
         current_wrap_before_build=$(echo "$run_before_build" | jq -r ".data.\"$initial_wrap_name\"")
+        [ $? -ne 0 ] && throwError 1
 
         if [[ "$current_wrap_before_build" != "null" ]]; then
             break;
