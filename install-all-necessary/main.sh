@@ -20,8 +20,8 @@ function installAllNecessary {
         echo "Problem with sourcing $file_to_source" >&2
         exit 111
     fi
-    last_action="$(main)"
-    [ $? -ne 0 ] && throwError 112 "$last_action"
+    (main) >&2
+    [ $? -ne 0 ] && throwError 112
 
     file_to_source="$this_dir/jq-install.sh"
     source "$file_to_source"
@@ -29,8 +29,8 @@ function installAllNecessary {
         echo "Problem with sourcing $file_to_source" >&2
         exit 111
     fi
-    last_action="$(main)"
-    [ $? -ne 0 ] && throwError 113 "$last_action"
+    (main) >&2
+    [ $? -ne 0 ] && throwError 113
 
     exit 0
 }
