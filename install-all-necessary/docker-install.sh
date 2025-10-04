@@ -24,9 +24,10 @@ function installDocker {
     exit 0
 }
 
-if command -v docker &> /dev/null; then
-    exit 0
-else
-    installDocker
-fi
-
+function main {
+    if command -v docker &> /dev/null; then
+        exit 0
+    else
+        installDocker
+    fi
+}
