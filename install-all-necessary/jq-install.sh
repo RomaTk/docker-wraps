@@ -11,8 +11,10 @@ function installJq {
     exit 0
 }
 
-if command -v jq &> /dev/null; then
-    exit 0
-else
-    installJq
-fi
+function main {
+    if command -v jq &> /dev/null; then
+        exit 0
+    else
+        installJq
+    fi
+}

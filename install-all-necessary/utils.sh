@@ -16,9 +16,6 @@ function throwError {
         113)
             echo "Problem with install or check jq" >&2
             ;;
-        114)
-            echo "Problem with chmod" >&2
-            ;;
         *)
             echo "Unknown error" >&2
             exit 1
