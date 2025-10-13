@@ -97,6 +97,8 @@ function removeContainer {
     local running_state
     local file_to_source
     local exit_code
+    local new_file_with_config
+    local last_action
 
     container_name=$(getName "$unique_prefix" "$wrap_name" "container")
     [ $? -ne 0 ] && throwError 113 "$container_name"
@@ -110,11 +112,29 @@ function removeContainer {
         source "$file_to_source"
         [ $? -ne 0 ] && throwError 111 "$file_to_source"
 
+        # FOR STOP/KILL WE NEED TO RESOLVE SEQUENCE
+        file_to_source="$scripts_dir/command-work/resolve-sequence/main.sh"
+        source "$file_to_source"
+        [ $? -ne 0 ] && throwError 111 "$file_to_source"
+
+        new_file_with_config="$(mktemp)"
+        [ $? -ne 0 ] && throwError 125 "$new_file_with_config"
         (
-            stopOrKill "$scripts_dir" "$file_with_config" "$unique_prefix" "$wrap_name" "kill"
+            resolveSequence "$scripts_dir" "$file_with_config" "$unique_prefix" "$wrap_name" "$new_file_with_config"
+        )
+        exit_code=$?
+        [ $exit_code -ne 0 ] && throwError 126 "Exit code was: $exit_code"
+
+        # NOW WE RESOLVED SEQUENCE, AND SAVED IN FILE
+
+        (
+            stopOrKill "$scripts_dir" "$new_file_with_config" "$unique_prefix" "$wrap_name" "kill"
         )
         exit_code=$?
         [ $exit_code -ne 0 ] && throwError 114 "Exit code was: $exit_code"
+
+        last_action=$(rm -f "$new_file_with_config")
+        [ $? -ne 0 ] && throwError 127 "$last_action"
 
     elif [[ "$running_state" != "false" ]]; then
 
