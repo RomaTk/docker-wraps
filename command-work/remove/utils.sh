@@ -52,6 +52,15 @@ function throwError {
         124)
             echo "No wrap found" >&2
             ;;
+        125)
+            echo "Problem with creating temporary file" >&2
+            ;;
+        126)
+            echo "Error within resolveSequence function" >&2
+            ;;
+        127)
+            echo "Problem with removing temporary file" >&2
+            ;;
         *)
             echo "Unknown error" >&2
             exit 1
