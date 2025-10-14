@@ -281,6 +281,7 @@ function init {
     [ $? -ne 0 ] && throwError 172 "$now_image_id"
 
     (removeImage)
+    # TODO: fix if error in remove image, should not stop main process (if container running on this image, it should be removed first)
 
     exit 0
 }
