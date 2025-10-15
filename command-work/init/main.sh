@@ -328,7 +328,6 @@ function removeImage {
         throwError 175 "Exit code was: $exit_code"
     fi
 
-
     remove_image_command="docker image rm --force \"$was_image_id\""
     echo "REMOVE COMMAND: $remove_image_command"
     (eval "$remove_image_command")
