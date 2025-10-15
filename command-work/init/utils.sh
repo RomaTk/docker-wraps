@@ -166,6 +166,12 @@ function throwError {
         174)
             echo "Problem within defining is image dangling" >&2
             ;;
+        175)
+            echo "Problem with removing container" >&2
+            ;;
+        176)
+            echo "Problem within removeImage function" >&2
+            ;;
         *)
             echo "Unknown error" >&2
             exit 1

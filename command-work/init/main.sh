@@ -281,7 +281,8 @@ function init {
     [ $? -ne 0 ] && throwError 172 "$now_image_id"
 
     (removeImage)
-    # TODO: fix if error in remove image, should not stop main process (if container running on this image, it should be removed first)
+    exit_code=$?
+    [ $exit_code -ne 0 ] && throwError 176 "Exit code was: $exit_code"
 
     exit 0
 }
@@ -312,6 +313,21 @@ function removeImage {
     if [[ "$image_info" != "[] []" ]]; then
         exit 0
     fi
+
+    (
+        local file_to_source="$scripts_dir/command-work/remove/main.sh"
+        source "$file_to_source"
+        if [ $? -ne 0 ]; then
+            throwError 111 "$file_to_source"
+        fi
+
+        remove "$scripts_dir" "$file_with_config" "$unique_prefix" "$initial_wrap_name" "container"
+    )
+    exit_code=$?
+    if [ $exit_code -ne 0 ]; then
+        throwError 175 "Exit code was: $exit_code"
+    fi
+
 
     remove_image_command="docker image rm --force \"$was_image_id\""
     echo "REMOVE COMMAND: $remove_image_command"
