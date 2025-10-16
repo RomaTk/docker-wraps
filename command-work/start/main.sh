@@ -58,9 +58,7 @@ function start {
     if [[ "$paused_state" == "true" ]]; then
         last_action=$(docker unpause "${container_name}")
         [ $? -ne 0 ] && throwError 164 "$last_action"
-    fi
-
-    running_state=$(docker inspect -f '{{.State.Running}}' "${container_name}" 2>/dev/null)    
+    fi   
 
     # INIT IMAGE
 
@@ -73,6 +71,8 @@ function start {
     )
     exit_code=$?
     [ $exit_code -ne 0 ] && throwError 166 "Exit code was: $exit_code"
+
+    running_state=$(docker inspect -f '{{.State.Running}}' "${container_name}" 2>/dev/null)
 
     if [[ "$running_state" == "false" || "$running_state" == "true" ]]; then
         # Do only if container exists
