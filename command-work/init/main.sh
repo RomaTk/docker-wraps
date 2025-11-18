@@ -367,7 +367,7 @@ function buildImageCreateCommandString {
     image_name=$(getName "$unique_prefix" "$initial_wrap_name" "image")
     [ $? -ne 0 ] && throwError 168 "$image_name"
 
-    echo "docker build -t \"${image_name}\" $build_options $based_on_line \"$context\""
+    echo "docker buildx build -t \"${image_name}\" $build_options $based_on_line \"$context\""
     exit 0
 }
 
