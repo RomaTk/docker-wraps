@@ -18,6 +18,7 @@ function getOptions {
     local wrap
     local based_on
     local is_precreate
+    local is_as_abstract
     local is_in_array
     
     local len
@@ -41,6 +42,10 @@ function getOptions {
     [ $? -ne 0 ] && throwError 111 "$file_to_source"
 
     file_to_source="$config_dir/wrap/based-on/is-precreate.sh"
+    source "$file_to_source"
+    [ $? -ne 0 ] && throwError 111 "$file_to_source"
+
+    file_to_source="$config_dir/wrap/based-on/as-abstract.sh"
     source "$file_to_source"
     [ $? -ne 0 ] && throwError 111 "$file_to_source"
 
@@ -77,7 +82,10 @@ function getOptions {
         is_precreate=$(getIsPrecreate "$based_on")
         [ $? -ne 0 ] && throwError 118 "$is_precreate"
 
-        if [[ "$is_precreate" == "false" ]]; then
+        is_as_abstract=$(getAsAbstract "$based_on")
+        [ $? -ne 0 ] && throwError 164 "$is_as_abstract"
+
+        if [[ "$is_precreate" == "false" && "$is_as_abstract" == "false" ]]; then
             break
         fi
 
