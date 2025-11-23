@@ -412,6 +412,10 @@ function getDataForBuild {
 
     based_on=$(findDeep "$current_dir" "$config_dir" "$common_utils_dir" "$file_with_config" "$wrap_name" "$current_dir/data-get/find-deep/based-on.sh")
     [ $? -ne 0 ] && throwError 121 "$based_on"
+    
+    if [[ -z "$based_on" ]]; then
+        based_on="null"
+    fi
 
     file_to_source="$current_dir/data-get/build-options.sh"
     source "$file_to_source"

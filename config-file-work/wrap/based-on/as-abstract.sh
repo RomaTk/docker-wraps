@@ -25,9 +25,9 @@ function getAsAbstract {
         exit 0
     fi
 
-    is_precreate=$(echo "$based_on" | jq -r ".$key")
+    is_as_abstract=$(echo "$based_on" | jq -r ".$key")
     [ $? -ne 0 ] && exit 1
 
-    echo "$is_precreate"
+    echo "$is_as_abstract"
     exit 0
 }
