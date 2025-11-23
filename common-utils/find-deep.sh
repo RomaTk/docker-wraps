@@ -16,6 +16,9 @@ function findDeep {
 
     # for based_on
     local based_on
+    local based_on_is_precreate
+    local based_on_is_abstract
+    local based_on_name
 
     file_to_source="$current_dir/utils.sh"
     sourceDo
@@ -27,6 +30,9 @@ function findDeep {
     sourceDo
 
     file_to_source="$config_dir/wrap/based-on/is-precreate.sh"
+    sourceDo
+
+    file_to_source="$config_dir/wrap/based-on/as-abstract.sh"
     sourceDo
 
     file_to_source="$config_dir/wrap/based-on/name.sh"
@@ -95,7 +101,14 @@ function findDeep {
                     exit 1
                 fi
 
-                if [[ "$based_on_is_precreate" != "true" ]]; then
+                based_on_is_abstract=$(getAsAbstract "$based_on")
+                if [ $? -ne 0 ]; then
+                    echo "$based_on_is_abstract" >&2
+                    echo "Problem with getAsAbstract function" >&2
+                    exit 1
+                fi
+
+                if [[ "$based_on_is_precreate" != "true" && "$based_on_is_abstract" != "true" ]]; then
                     exit 0
                 fi
 

@@ -46,6 +46,12 @@ function throwError {
         122)
             echo "No wrap found" >&2
             ;;
+        123)
+            echo "<- Problem with getAsAbstract function" >&2
+            ;;
+        124)
+            echo "<- Problem with changeNewItemsAsAbstractOnly function" >&2
+            ;;
         *)
             echo "Unknown error" >&2
             exit 1

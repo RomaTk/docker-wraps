@@ -32,6 +32,10 @@ function getSequence {
     source "$file_to_source"
     [ $? -ne 0 ] && throwError 111 "$file_to_source"
 
+    file_to_source="$config_dir/wrap/based-on/as-abstract.sh"
+    source "$file_to_source"
+    [ $? -ne 0 ] && throwError 111 "$file_to_source"
+
     file_to_source="$config_dir/wrap/based-on/name.sh"
     source "$file_to_source"
     [ $? -ne 0 ] && throwError 111 "$file_to_source"
@@ -96,6 +100,8 @@ function goThrewSequence {
     local length
     local item
     local is_precreate
+    local is_as_abstract
+    local is_analysed
     local name
     local i
     local new_items
@@ -121,16 +127,24 @@ function goThrewSequence {
             is_precreate="$(getIsPrecreate "$item")"
             [ $? -ne 0 ] && throwError 116 "$is_precreate"
 
+            is_as_abstract="$(getAsAbstract "$item")"
+            [ $? -ne 0 ] && throwError 123 "$is_as_abstract"
+
             is_analysed="$(echo "$item" | jq -r ".isAnalysed")"
             [ $? -ne 0 ] && throwError 1 "Error: $is_analysed"
 
-            if [[ "$is_precreate" == "true" && "$is_analysed" != "true" ]]; then
+            if [[ "$is_precreate" == "true" || "$is_as_abstract" == "true" ]] && [[ "$is_analysed" != "true" ]]; then
 
                 name="$(getBasedOnName "$item")"
                 [ $? -ne 0 ] && throwError 117 "$name"
 
                 new_items="$(getItemsForSequence "$name")"
                 [ $? -ne 0 ] && throwError 114 "$new_items"
+
+                if [[ "$is_precreate" == "false" && "$is_as_abstract" == "true" ]]; then
+                    new_items="$(changeNewItemsAsAbstractOnly "$new_items")"
+                    [ $? -ne 0 ] && throwError 124 "$new_items"
+                fi
 
                 item=$(echo "$item" | jq -r ".isAnalysed=true")
                 [ $? -ne 0 ] && throwError 1 "Error: $item"
@@ -146,12 +160,48 @@ function goThrewSequence {
 
         done
 
-        sequence="$new_sequence"
+        sequence="$new_sequence"        
         
     done
 
     echo "$sequence"
 
+    exit 0
+}
+
+function changeNewItemsAsAbstractOnly {
+    local items="$1"
+
+    local length
+    local item
+    local is_as_abstract
+    local is_precreate
+    local i
+    local new_items="[]"
+
+    length=$(echo "$items" | jq -r "length")
+    [ $? -ne 0 ] && throwError 1 "Error: $length"
+
+    for (( i=0; i<length; i++ )); do
+        item=$(echo "$items" | jq -r ".[$i]")
+        [ $? -ne 0 ] && throwError 1 "Error: $item"
+
+        is_precreate="$(getIsPrecreate "$item")"
+        [ $? -ne 0 ] && throwError 116 "$is_precreate"
+
+        is_as_abstract="$(getAsAbstract "$item")"
+        [ $? -ne 0 ] && throwError 123 "$is_as_abstract"
+
+        if [[ "$is_precreate" == "true" || "$is_as_abstract" == "true" ]]; then
+            item="$(echo "$item" | jq -r ".asAbstract=true | .precreate=false")"
+            [ $? -ne 0 ] && throwError 1 "Error: $item"
+        fi
+
+        new_items="$(echo "$new_items" | jq -r ". + [$item]")"
+        [ $? -ne 0 ] && throwError 1 "Error: $new_items"
+    done
+
+    echo "$new_items"
     exit 0
 }
 
@@ -197,6 +247,8 @@ function sortSequence {
     local sorted_sequence_length
     local item
     local is_precreate
+    local is_as_abstract
+    local initial_item
     local tag
     local i
     local is_in_sequence_already
@@ -211,12 +263,15 @@ function sortSequence {
         is_precreate="$(getIsPrecreate "$item")"
         [ $? -ne 0 ] && throwError 116 "$is_precreate"
 
+        is_as_abstract="$(getAsAbstract "$item")"
+        [ $? -ne 0 ] && throwError 123 "$is_as_abstract"
+
         tag="$(getBasedOnTag "$item")"
         [ $? -ne 0 ] && throwError 118 "$tag"
 
         initial_item="$item"
 
-        if [[ "$is_precreate" == "false" || "$tag" != "latest" ]]; then
+        if [[ "$is_precreate" == "false" && "$is_as_abstract" != "true" ]] || [[ "$tag" != "latest" ]]; then
             # Only one non-precreate or non-latest item is allowed in the sequence and it should be the first one
             sorted_sequence_length=$(echo "$sorted_sequence" | jq -r "length")
             [ $? -ne 0 ] && throwError 1 "$sorted_sequence_length"
