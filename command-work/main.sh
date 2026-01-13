@@ -144,7 +144,7 @@ function forRemove {
             possible_is_force="${command_as_args[2]}"
             if [[ "$possible_is_force" == "--force" ]]; then
                 # remove all --force
-                is_force="true" 
+                is_force="true"
                 removeAll "both" "$is_force"
             else
                 # remove all <type> [--force]
