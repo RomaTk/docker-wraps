@@ -86,7 +86,7 @@ function start {
             [ $? -ne 0 ] && throwError 111 "$file_to_source"
 
             (
-                remove "$scripts_dir" "$file_with_config" "$unique_prefix" "$wrap_name" "container"
+                remove "$scripts_dir" "$file_with_config" "$unique_prefix" "$wrap_name" "container" "false"
             )
             exit_code=$?
             [ $exit_code -ne 0 ] && throwError 171 "Exit code was: $exit_code"
