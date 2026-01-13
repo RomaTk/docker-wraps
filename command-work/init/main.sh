@@ -321,7 +321,7 @@ function removeImage {
             throwError 111 "$file_to_source"
         fi
 
-        remove "$scripts_dir" "$file_with_config" "$unique_prefix" "$initial_wrap_name" "container"
+        remove "$scripts_dir" "$file_with_config" "$unique_prefix" "$initial_wrap_name" "container" "false"
     )
     exit_code=$?
     if [ $exit_code -ne 0 ]; then
