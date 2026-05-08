@@ -94,31 +94,22 @@ function implementObject {
 
 function checkObjectTypes {
     local type
-    local is_exist
-    local key
+    local types_output
 
-    for key in "readonly" "nocopy"; do
-        is_exist=$(echo "$object_option" | jq -r "has(\"$key\")")
-        if [ $? -ne 0 ]; then
-            echo "Unknown error in checking key existence" >&2
-            exit 1
-        fi
+    types_output=$(echo "$object_option" | jq -r '["readonly", "nocopy"][] as $k | if has($k) then (.[$k] | type) else empty end')
+    if [ $? -ne 0 ]; then
+        echo "Unknown error in extracting key types" >&2
+        exit 1
+    fi
 
-        if [[ "$is_exist" == "false" ]]; then
-            continue
-        fi
-
-        type=$(echo "$object_option" | jq -r ".$key | type")
-        if [ $? -ne 0 ]; then
-            echo "Unknown error in extracting key type" >&2
-            exit 1
-        fi
-
-        if [[ "$type" != "boolean" ]]; then
-            echo "Type is not a boolean" >&2
-            exit 1
-        fi
-    done
+    if [[ -n "$types_output" ]]; then
+        while IFS= read -r type; do
+            if [[ "$type" != "boolean" ]]; then
+                echo "Type is not a boolean" >&2
+                exit 1
+            fi
+        done <<< "$types_output"
+    fi
 
     type=$(echo "$object_option" | jq -r ".destination | type")
     if [ $? -ne 0 ]; then
