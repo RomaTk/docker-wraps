@@ -47,45 +47,34 @@ function implementObject {
     local value
     local continue_in_error
 
-    for key in "action" "value"; do
-        type=$(echo "$object_option" | jq -r ".$key | type")
-        if [ $? -ne 0 ]; then
-            echo "Unknown error in extracting key type" >&2
-            exit 1
-        fi
-
-        if [[ "$type" != "string" ]]; then
-            echo "Type is not a string" >&2
-            exit 1
-        fi
-    done
-
-    key="continueInError"
-    type=$(echo "$object_option" | jq -r ".$key | type")
+    local parsed_data
+    parsed_data=$(echo "$object_option" | jq -r '[ (.action | type), (.value | type), (.continueInError | type), .action, .value, (.continueInError | tostring) ] | @sh')
     if [ $? -ne 0 ]; then
-        echo "Unknown error in extracting key type" >&2
-        exit 1
-    fi
-    if [[ "$type" != "boolean" && "$type" != "null" ]]; then
-        echo "Type of $key is not a boolean and not null" >&2
-        exit 1
-    fi
-    continue_in_error=$(echo "$object_option" | jq -r ".$key")
-    if [ $? -ne 0 ]; then
-        echo "Unknown error in extracting key value" >&2
+        echo "Unknown error in extracting object properties" >&2
         exit 1
     fi
 
-    action=$(echo "$object_option" | jq -r ".action")
-    if [ $? -ne 0 ]; then
-        echo "Unknown error in extracting key value" >&2
+    eval "local arr=($parsed_data)"
+
+    local type_action="${arr[0]}"
+    local type_value="${arr[1]}"
+    local type_continue="${arr[2]}"
+    action="${arr[3]}"
+    value="${arr[4]}"
+    continue_in_error="${arr[5]}"
+
+    if [[ "$type_action" != "string" || "$type_value" != "string" ]]; then
+        echo "Type is not a string" >&2
         exit 1
     fi
 
-    value=$(echo "$object_option" | jq -r ".value")
-    if [ $? -ne 0 ]; then
-        echo "Unknown error in extracting key value" >&2
+    if [[ "$type_continue" != "boolean" && "$type_continue" != "null" ]]; then
+        echo "Type of continueInError is not a boolean and not null" >&2
         exit 1
+    fi
+
+    if [[ "$continue_in_error" == "null" ]]; then
+        continue_in_error="null" # it's already "null" string from tostring, but keeping it conceptually clear
     fi
 
 
