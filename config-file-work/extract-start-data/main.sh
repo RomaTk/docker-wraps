@@ -204,79 +204,45 @@ function getDataForRun {
 }
 
 function convertVolumesToOptions {
-    local lengthOfVolumes
-    local i
-    local volume_data
-    local type
     local volume_data_source
     local volume_data_destination
     local volume_data_readonly
-    local is_exist
-
+    local volume_data_nocopy
     local volume_string
+    local volume_strings=()
 
     file_to_source="$common_utils_dir/path-convert.sh"
     source "$file_to_source"
     [ $? -ne 0 ] && throwError 111 "$file_to_source"
 
-    lengthOfVolumes=$(echo "$volumes" | jq -r ". | length")
-    [ $? -ne 0 ] && throwError 1 "Error within jq getting length of volumes"
-
-    for (( i=0; i<lengthOfVolumes; i++ )); do
-
-        volume_data=$(echo "$volumes" | jq -r ".[$i]")
-        [ $? -ne 0 ] && throwError 1 "Error within jq getting volume"
-
-        type=$(echo "$volume_data" | jq -r ".source | type")
-        [ $? -ne 0 ] && throwError 1 "Error within jq getting type of source"
-
-        if [[ "$type" == "null" ]]; then
+    while IFS=$'\t' read -r volume_data_source volume_data_destination volume_data_readonly volume_data_nocopy; do
+        if [[ "$volume_data_source" == "null" ]]; then
             continue
         fi
-
-       
-
-        volume_data_source=$(echo "$volume_data" | jq -r ".source")
-        [ $? -ne 0 ] && throwError 1 "Error within jq getting source of volume"
 
         if [[ "$volume_data_source" == *'/'* ]]; then
             volume_data_source=$(abspath "$volume_data_source")
             [ $? -ne 0 ] && throwError 135 "$volume_data_source"
         fi
 
-        volume_data_destination=$(echo "$volume_data" | jq -r ".destination")
-        [ $? -ne 0 ] && throwError 1 "Error within jq getting destination of volume"
-
         # TODO add change bind or volume
         volume_string="--mount type=bind,src=\"$volume_data_source\",dst=\"$volume_data_destination\""
 
-        
-        is_exist=$(echo "$volume_data" | jq -r "has(\"readonly\")")
-        [ $? -ne 0 ] && throwError 1 "Error within jq checking readonly"
-
-        if [[ "$is_exist" == "true" ]]; then
-            volume_data_readonly=$(echo "$volume_data" | jq -r ".readonly")
-            [ $? -ne 0 ] && throwError 1 "Error within jq getting readonly"
-            if [[ "$volume_data_readonly" == "true" ]]; then
-                volume_string="$volume_string,ro"
-            fi
-        fi
-        
-        is_exist=$(echo "$volume_data" | jq -r "has(\"volume-nocopy\")")
-        [ $? -ne 0 ] && throwError 1 "Error within jq checking volume-nocopy"
-
-        if [[ "$is_exist" == "true" ]]; then
-            volume_data_nocopy=$(echo "$volume_data" | jq -r ".volume-nocopy")
-            [ $? -ne 0 ] && throwError 1 "Error within jq getting volume-nocopy"
-            if [[ "$volume_data_nocopy" == "true" ]]; then
-                volume_string="$volume_string,volume-opt=nocopy"
-            fi
+        if [[ "$volume_data_readonly" == "true" ]]; then
+            volume_string="$volume_string,ro"
         fi
 
-        run_options=$(echo "$run_options" | jq -r ". + [ \"${volume_string//\"/\\\"}\"] ")
-        [ $? -ne 0 ] && throwError 1 "Error within jq adding volume"
-    done
+        if [[ "$volume_data_nocopy" == "true" ]]; then
+            volume_string="$volume_string,volume-opt=nocopy"
+        fi
 
+        volume_strings+=("$volume_string")
+    done < <(echo "$volumes" | jq -r 'if type == "array" then .[] | [.source // "null", .destination // "null", (if .readonly == true then "true" else "false" end), (if ."volume-nocopy" == true then "true" else "false" end)] | @tsv else empty end')
+
+    if [[ ${#volume_strings[@]} -gt 0 ]]; then
+        run_options=$(jq -r -n --argjson run_options "$run_options" --args '$run_options + $ARGS.positional' -- "${volume_strings[@]}")
+        [ $? -ne 0 ] && throwError 1 "Error within jq adding volumes"
+    fi
 
     echo "$run_options"
     exit 0
@@ -284,15 +250,11 @@ function convertVolumesToOptions {
 
 function convertEntrypointValuesToOptions {
     local entrypoint_args_string
-
-    local length_array
     local entrypoint_commands_string=""
-    local entrypoint_command
     local command_value
     local command_continue_in_error
-
     local cmd
-    local i
+    local count=0
 
     entrypoint_args_string=$(echo "$entrypoint_args" | jq -r 'join(" ")')
     if [ $? -ne 0 ]; then
@@ -300,46 +262,22 @@ function convertEntrypointValuesToOptions {
         exit 1
     fi
 
-    length_array=$(echo "$entrypoint_commands" | jq -r ". | length")
-    if [ $? -ne 0 ]; then
-        echo "Error within jq getting length of entrypoint_commands" >&2
-        exit 1
-    fi
-
-    for (( i=0; i<length_array; i++ )); do
-        entrypoint_command=$(echo "$entrypoint_commands" | jq -r ".[$i]")   
-        if [ $? -ne 0 ]; then
-            echo "Error within jq getting entrypoint_command" >&2
-            exit 1
-        fi
-
-        command_value=$(echo "$entrypoint_command" | jq -r ".value")
-        if [ $? -ne 0 ]; then
-            echo "Error within jq getting value of entrypoint_command" >&2
-            exit 1
-        fi
-
-        command_continue_in_error=$(echo "$entrypoint_command" | jq -r ".continueInError")
-        if [ $? -ne 0 ]; then
-            echo "Error within jq getting continueInError of entrypoint_command" >&2
-            exit 1
-        fi
-
-        if [[ "$i" -eq 0 ]]; then
+    while IFS=$'\t' read -r command_value command_continue_in_error; do
+        if [[ $count -eq 0 ]]; then
             entrypoint_commands_string="$command_value"
         else
             entrypoint_commands_string="$entrypoint_commands_string $command_value"
         fi
-        
 
-        if [ "$command_continue_in_error" == "true" ]; then
+        if [[ "$command_continue_in_error" == "true" ]]; then
             entrypoint_commands_string="$entrypoint_commands_string ;"
         else
             entrypoint_commands_string="$entrypoint_commands_string &&"
         fi
-    done
+        ((count++))
+    done < <(echo "$entrypoint_commands" | jq -r 'if type == "array" then .[] | [.value // empty, (if .continueInError == true then "true" else "false" end)] | @tsv else empty end')
 
-    if [[ "$length_array" -gt 0 ]]; then
+    if [[ "$count" -gt 0 ]]; then
         entrypoint_commands_string="$entrypoint_commands_string exit 0"
     fi
 
@@ -347,7 +285,7 @@ function convertEntrypointValuesToOptions {
     if [[ ${#cmd} -gt 0 && ${#entrypoint_commands_string} -gt 0 ]]; then
         cmd="$cmd \"${entrypoint_commands_string//\"/\\\"}\""
     elif [[ ${#entrypoint_commands_string} -gt 0 ]]; then
-        cmd=cmd="\"${entrypoint_commands_string//\"/\\\"}\""
+        cmd="\"${entrypoint_commands_string//\"/\\\"}\""
     fi
 
     echo "$cmd"
