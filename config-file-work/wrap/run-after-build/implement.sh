@@ -64,34 +64,21 @@ function implementObject {
 
     local length_of_array
 
-    for key in "action" "value" "basedOnScope"; do
-        type=$(echo "$run_before_builds" | jq -r ".$key | type")
-        if [ $? -ne 0 ]; then
-            echo "Unknown error in extracting key type" >&2
-            exit 1
-        fi
+    local extracted_data
+    local action_type
+    local value_type
+    local basedOnScope_type
 
-        if [[ "$type" != "string" ]]; then
-            echo "Type is not a string" >&2
-            exit 1
-        fi
-    done
-
-    action=$(echo "$run_before_builds" | jq -r ".action")
+    extracted_data=$(echo "$run_before_builds" | jq -r '[.action, (.action | type), .value, (.value | type), .basedOnScope, (.basedOnScope | type)] | @tsv')
     if [ $? -ne 0 ]; then
-        echo "Unknown error in extracting key value" >&2
+        echo "Unknown error in extracting keys" >&2
         exit 1
     fi
 
-    value=$(echo "$run_before_builds" | jq -r ".value")
-    if [ $? -ne 0 ]; then
-        echo "Unknown error in extracting key value" >&2
-        exit 1
-    fi
+    IFS=$'\t' read -r action action_type value value_type basedOnScope basedOnScope_type <<< "$extracted_data"
 
-    basedOnScope=$(echo "$run_before_builds" | jq -r ".basedOnScope")
-    if [ $? -ne 0 ]; then
-        echo "Unknown error in extracting key value" >&2
+    if [[ "$action_type" != "string" || "$value_type" != "string" || "$basedOnScope_type" != "string" ]]; then
+        echo "Type is not a string" >&2
         exit 1
     fi
 
