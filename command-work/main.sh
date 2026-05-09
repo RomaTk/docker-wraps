@@ -55,6 +55,9 @@ function commandWork {
         "init" | "start" | "stop" | "kill")
             forOther
             ;;
+        "wrapweight")
+            forWrapweight
+            ;;
         *)
             throwError 113 "Tried command: $command"
             ;;
@@ -63,6 +66,32 @@ function commandWork {
     
 
     exit 0
+}
+
+function forWrapweight {
+    local file_to_source
+    local exit_code
+    local subcommand
+
+    if [[ ${#command_as_args[@]} -lt 2 ]]; then
+        throwError 120 "Length is less than 2"
+    fi
+
+    subcommand="${command_as_args[1]}"
+
+    if [[ "$subcommand" == "all" ]]; then
+        file_to_source="$current_dir/wrapweight/main.sh"
+        source "$file_to_source"
+        [ $? -ne 0 ] && throwError 111 "$file_to_source"
+
+        (
+            wrapWeightAll "$scripts_dir" "$file_with_config" "$unique_prefix"
+        )
+        exit_code=$?
+        [ $exit_code -ne 0 ] && throwError 117 "Exit code was: $exit_code"
+    else
+        throwError 121 "Mentioned: $subcommand"
+    fi
 }
 
 function forGet {
