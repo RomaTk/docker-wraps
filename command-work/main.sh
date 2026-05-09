@@ -122,6 +122,8 @@ function forRemove {
     local exit_code
     local type
     local wrap_name
+    local possible_is_force
+    local is_force="false"
 
     if [[ ${#command_as_args[@]} -lt 3 ]]; then
         if [[ ${#command_as_args[@]} -lt 2 ]]; then
@@ -138,24 +140,50 @@ function forRemove {
     type="${command_as_args[1]}"
 
     if [[ "$type" == "all" ]]; then
-        if [[ ${#command_as_args[@]} -ne 2 ]]; then
-            type="${command_as_args[2]}"
-            removeAll "$type"
+        if [[ ${#command_as_args[@]} -gt 2 ]]; then
+            possible_is_force="${command_as_args[2]}"
+            if [[ "$possible_is_force" == "--force" ]]; then
+                # remove all --force
+                is_force="true"
+                removeAll "both" "$is_force"
+            else
+                # remove all <type> [--force]
+                type="$possible_is_force"
+                if [[ ${#command_as_args[@]} -gt 3 ]]; then
+                    possible_is_force="${command_as_args[3]}"
+                    if [[ "$possible_is_force" == "--force" ]]; then
+                        is_force="true"
+                    else
+                        echo "Unknown argument: $possible_is_force, maybe you meant --force?" >&2
+                        exit 1
+                    fi
+                fi
+                removeAll "$type" "$is_force"
+            fi
         else
-            removeAll "both"
+            removeAll "both" "$is_force"
         fi
 
         exit 0
     fi
 
-
     wrap_name="${command_as_args[2]}"
+
+    if [[ ${#command_as_args[@]} -gt 3 ]]; then
+        possible_is_force="${command_as_args[3]}"
+        if [[ "$possible_is_force" == "--force" ]]; then
+            is_force="true"
+        else
+            echo "Unknown argument: $possible_is_force, maybe you meant --force?" >&2
+            exit 1
+        fi
+    fi
 
     file_to_source="$current_dir/remove/main.sh"
     source "$file_to_source"
     [ $? -ne 0 ] && throwError 111 "$file_to_source"
     (
-        remove "$scripts_dir" "$file_with_config" "$unique_prefix" "$wrap_name" "$type"
+        remove "$scripts_dir" "$file_with_config" "$unique_prefix" "$wrap_name" "$type" "$is_force"
     )
     exit_code=$?
     [ $exit_code -ne 0 ] && throwError 122 "Exit code was: $exit_code"
@@ -163,6 +191,7 @@ function forRemove {
 
 function removeAll {
     local type="$1"
+    local is_force="$2"
 
     local file_to_source
     local wrap_names
@@ -192,7 +221,7 @@ function removeAll {
         fi
 
         (
-            remove "$scripts_dir" "$file_with_config" "$unique_prefix" "$wrap_name" "$type"
+            remove "$scripts_dir" "$file_with_config" "$unique_prefix" "$wrap_name" "$type" "$is_force"
         )
         exit_code=$?
         [ $exit_code -ne 0 ] && throwError 122 "Exit code was: $exit_code"
