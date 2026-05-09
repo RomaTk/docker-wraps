@@ -85,6 +85,9 @@ function throwError {
         163)
             echo "Problem with getting image name" >&2
             ;;
+        164)
+            echo "Problem within getAsAbstract function" >&2
+            ;;
         *)
             echo "Unknown error" >&2
             exit 1

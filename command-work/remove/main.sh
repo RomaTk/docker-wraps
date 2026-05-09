@@ -4,13 +4,15 @@ function remove {
     local unique_prefix="$3"
     local wrap_name="$4"
     local type="$5"
+    local is_force="$6"
 
     local current_dir="$scripts_dir/command-work/remove"
     local config_dir="$scripts_dir/config-file-work"
 
     local file_to_source
     local is_to_do_clean
-    
+    local is_container_or_image_existed
+
     file_to_source="$current_dir/utils.sh"
     source "$file_to_source"
     if [ $? -ne 0 ]; then
@@ -25,6 +27,12 @@ function remove {
     file_to_source="$scripts_dir/command-work/get-name/main.sh"
     source "$file_to_source"
     [ $? -ne 0 ] && throwError 111 "$file_to_source"
+
+    if [[ "$is_force" == "true" ]]; then
+        is_container_or_image_existed="true"
+    else
+        is_container_or_image_existed=$(isContainerOrImageExists)
+    fi
 
     case $type in
         "container")
@@ -44,6 +52,10 @@ function remove {
     esac
     
     # Clean up if needed
+    if [[ "$is_container_or_image_existed" == "false" ]]; then
+        exit 0
+    fi
+
     is_to_do_clean=$(isToDoClean)
     [ $? -ne 0 ] && throwError 122 "$is_to_do_clean"
 
@@ -58,6 +70,36 @@ function remove {
     (clean "$scripts_dir" "$file_with_config" "$unique_prefix" "$wrap_name")
     [ $? -ne 0 ] && throwError 123 "Error during clean process"
 
+    exit 0
+}
+
+function isContainerOrImageExists {
+    local image_name
+    local container_name
+    local image_info
+    local container_info
+
+    image_name=$(getName "$unique_prefix" "$wrap_name" "image")
+    [ $? -ne 0 ] && throwError 116 "$image_name"
+
+    container_name=$(getName "$unique_prefix" "$wrap_name" "container")
+    [ $? -ne 0 ] && throwError 113 "$container_name"
+
+    image_info=$(docker image inspect "$image_name" 2>/dev/null)
+
+    if [[ "$image_info" != "[]" ]]; then
+        echo "true"
+        exit 0
+    fi
+
+    container_info=$(docker container inspect "$container_name" 2>/dev/null)
+
+    if [[ "$container_info" != "[]" ]]; then
+        echo "true"
+        exit 0
+    fi
+
+    echo "false"
     exit 0
 }
 

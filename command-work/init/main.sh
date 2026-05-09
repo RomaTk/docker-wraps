@@ -321,7 +321,7 @@ function removeImage {
             throwError 111 "$file_to_source"
         fi
 
-        remove "$scripts_dir" "$file_with_config" "$unique_prefix" "$initial_wrap_name" "container"
+        remove "$scripts_dir" "$file_with_config" "$unique_prefix" "$initial_wrap_name" "container" "false"
     )
     exit_code=$?
     if [ $exit_code -ne 0 ]; then
@@ -367,7 +367,7 @@ function buildImageCreateCommandString {
     image_name=$(getName "$unique_prefix" "$initial_wrap_name" "image")
     [ $? -ne 0 ] && throwError 168 "$image_name"
 
-    echo "docker build -t \"${image_name}\" $build_options $based_on_line \"$context\""
+    echo "docker buildx build -t \"${image_name}\" $build_options $based_on_line \"$context\""
     exit 0
 }
 
@@ -412,6 +412,10 @@ function getDataForBuild {
 
     based_on=$(findDeep "$current_dir" "$config_dir" "$common_utils_dir" "$file_with_config" "$wrap_name" "$current_dir/data-get/find-deep/based-on.sh")
     [ $? -ne 0 ] && throwError 121 "$based_on"
+    
+    if [[ -z "$based_on" ]]; then
+        based_on="null"
+    fi
 
     file_to_source="$current_dir/data-get/build-options.sh"
     source "$file_to_source"

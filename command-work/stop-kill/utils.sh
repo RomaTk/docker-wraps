@@ -76,6 +76,9 @@ function throwError {
         143)
             echo "Problem within getDataForKill function" >&2
             ;;
+        144)
+            echo "Problem within getAsAbstract function" >&2
+            ;;
         *)
             echo "Unknown error" >&2
             exit 1
