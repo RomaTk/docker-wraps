@@ -19,7 +19,7 @@ function getCommandForStart {
     [ $? -ne 0 ] && throwError 111 "$file_to_source"
 
 
-    part_string=$(checkNotBooleanOption "$run_command" "--attach" "-a")
+    part_string=$(checkBooleanOption "$run_command" "--attach" "-a")
     [ $? -ne 0 ] && throwError 158 "$part_string (check --attach)"
     full_string="${full_string}${part_string}"
 
