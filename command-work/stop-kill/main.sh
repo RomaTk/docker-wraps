@@ -175,14 +175,14 @@ function getDataForKill {
     [ $? -ne 0 ] && throwError 137 "$kill_signal"
 
     if [[ -n "$kill_signal" ]]; then
-        kill_options=$(echo "$kill_options" | jq -r ". + [ \"--signal \\\"$kill_signal\\\"\"] ")
+        kill_options=$(jq -c -r --argjson arr "$kill_options" --arg val "--signal \"$kill_signal\"" "$arr + [$val]" <<<"{}")
         [ $? -ne 0 ] && throwError 1 "Error within jq adding stop-signal"
     fi
 
     kill_options=$(getOptions "$current_dir" "$config_dir" "$common_utils_dir" "$file_with_config" "$wrap_name" "$kill_options" "kill-options")
     [ $? -ne 0 ] && throwError 128 "$kill_options (kill-options)"
 
-    kill_options_string=$(echo "$kill_options" | jq -r 'join(" ")')
+    kill_options_string=$(echo "$kill_options" | jq -r "join(\" \")")
     [ $? -ne 0 ] && throwError 1 "Error within jq joining kill-options"
 
     echo "$kill_options_string"

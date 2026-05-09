@@ -97,40 +97,34 @@ function getItemsForSequence {
 function goThrewSequence {
     local sequence="$1"
 
-    local length
     local item
     local is_precreate
     local is_as_abstract
     local is_analysed
     local name
-    local i
     local new_items
-    local items_length
-
     local new_sequence
 
     local changeMade="true"
+    local items_array
 
     while [[ "$changeMade" == "true" ]]; do
         changeMade="false"
-
         new_sequence="[]"
 
-        length=$(echo "$sequence" | jq -r "length")
-        [ $? -ne 0 ] && throwError 1 "Error: $length"
+        # Read JSON array elements into bash array
+        local items_array
+    eval "items_array=($(echo "$sequence" | jq -e -r '.[] | (if type == "string" then . else tostring end) | @sh'))"
+    [ $? -ne 0 ] && throwError 1 "Error parsing sequence"
 
-        for (( i=0; i<length; i++ )); do
-
-            item=$(echo "$sequence" | jq -r ".[$i]")
-            [ $? -ne 0 ] && throwError 1 "Error: $item"
-
+        for item in "${items_array[@]}"; do
             is_precreate="$(getIsPrecreate "$item")"
             [ $? -ne 0 ] && throwError 116 "$is_precreate"
 
             is_as_abstract="$(getAsAbstract "$item")"
             [ $? -ne 0 ] && throwError 123 "$is_as_abstract"
 
-            is_analysed="$(echo "$item" | jq -r ".isAnalysed")"
+            is_analysed="$(echo "$item" | jq -r '.isAnalysed')"
             [ $? -ne 0 ] && throwError 1 "Error: $is_analysed"
 
             if [[ "$is_precreate" == "true" || "$is_as_abstract" == "true" ]] && [[ "$is_analysed" != "true" ]]; then
@@ -146,46 +140,40 @@ function goThrewSequence {
                     [ $? -ne 0 ] && throwError 124 "$new_items"
                 fi
 
-                item=$(echo "$item" | jq -r ".isAnalysed=true")
+                item=$(echo "$item" | jq -c -r '.isAnalysed=true')
                 [ $? -ne 0 ] && throwError 1 "Error: $item"
 
-                new_sequence=$(echo "$new_sequence" | jq -r ". + $new_items + [$item]")
+                new_sequence=$(jq -c -r --argjson seq "$new_sequence" --argjson ni "$new_items" --argjson it "$item" '$seq + $ni + [$it]' <<<"{}")
                 [ $? -ne 0 ] && throwError 1 "Error: $new_sequence"
 
                 changeMade="true"
             else
-                new_sequence=$(echo "$new_sequence" | jq -r ". + [$item]")
+                new_sequence=$(jq -c -r --argjson seq "$new_sequence" --argjson it "$item" '$seq + [$it]' <<<"{}")
                 [ $? -ne 0 ] && throwError 1 "Error: $new_sequence"
             fi
-
         done
 
         sequence="$new_sequence"        
-        
     done
 
     echo "$sequence"
-
     exit 0
 }
 
 function changeNewItemsAsAbstractOnly {
     local items="$1"
 
-    local length
     local item
     local is_as_abstract
     local is_precreate
-    local i
     local new_items="[]"
+    local items_array
 
-    length=$(echo "$items" | jq -r "length")
-    [ $? -ne 0 ] && throwError 1 "Error: $length"
+    local items_array
+    eval "items_array=($(echo "$items" | jq -e -r '.[] | (if type == "string" then . else tostring end) | @sh'))"
+    [ $? -ne 0 ] && throwError 1 "Error parsing items"
 
-    for (( i=0; i<length; i++ )); do
-        item=$(echo "$items" | jq -r ".[$i]")
-        [ $? -ne 0 ] && throwError 1 "Error: $item"
-
+    for item in "${items_array[@]}"; do
         is_precreate="$(getIsPrecreate "$item")"
         [ $? -ne 0 ] && throwError 116 "$is_precreate"
 
@@ -193,11 +181,12 @@ function changeNewItemsAsAbstractOnly {
         [ $? -ne 0 ] && throwError 123 "$is_as_abstract"
 
         if [[ "$is_precreate" == "true" || "$is_as_abstract" == "true" ]]; then
-            item="$(echo "$item" | jq -r ".asAbstract=true | .precreate=false")"
+            item="$(echo "$item" | jq -c -r '.asAbstract=true | .precreate=false')"
             [ $? -ne 0 ] && throwError 1 "Error: $item"
         fi
 
-        new_items="$(echo "$new_items" | jq -r ". + [$item]")"
+        new_sequence="$(jq -c -r --argjson seq "$new_items" --argjson it "$item" '$seq + [$it]' <<<"{}")"
+        new_items="$new_sequence"
         [ $? -ne 0 ] && throwError 1 "Error: $new_items"
     done
 
@@ -210,22 +199,19 @@ function isInSequenceAlready {
     local sequence="$1"
     local item_to_check="$2"
 
-    local length
     local item
     local name
     local item_to_check_name
-    local i
-
-    length=$(echo "$sequence" | jq -r "length")
-    [ $? -ne 0 ] && throwError 1 "Error: $length"
+    local items_array
 
     item_to_check_name="$(getBasedOnName "$item_to_check")"
     [ $? -ne 0 ] && throwError 117 "$item_to_check_name"
 
-    for (( i=0; i<length; i++ )); do
-        item=$(echo "$sequence" | jq -r ".[$i]")
-        [ $? -ne 0 ] && throwError 1 "Error: $item"
+    local items_array
+    eval "items_array=($(echo "$sequence" | jq -e -r '.[] | (if type == "string" then . else tostring end) | @sh'))"
+    [ $? -ne 0 ] && throwError 1 "Error parsing sequence"
 
+    for item in "${items_array[@]}"; do
         name="$(getBasedOnName "$item")"
         [ $? -ne 0 ] && throwError 117 "$name"
 
@@ -242,24 +228,21 @@ function isInSequenceAlready {
 function sortSequence {
     local sequence="$1"
 
-    local length
     local sorted_sequence="[]"
     local sorted_sequence_length
     local item
     local is_precreate
     local is_as_abstract
-    local initial_item
     local tag
-    local i
     local is_in_sequence_already
+    local items_array
+    local new_sequence
 
-    length=$(echo "$sequence" | jq -r "length")
-    [ $? -ne 0 ] && throwError 1 "Error: $length"
+    local items_array
+    eval "items_array=($(echo "$sequence" | jq -e -r '.[] | (if type == "string" then . else tostring end) | @sh'))"
+    [ $? -ne 0 ] && throwError 1 "Error parsing sequence"
 
-    for (( i=0; i<length; i++ )); do
-        item=$(echo "$sequence" | jq -r ".[$i]")
-        [ $? -ne 0 ] && throwError 1 "Error: $item"
-
+    for item in "${items_array[@]}"; do
         is_precreate="$(getIsPrecreate "$item")"
         [ $? -ne 0 ] && throwError 116 "$is_precreate"
 
@@ -269,16 +252,12 @@ function sortSequence {
         tag="$(getBasedOnTag "$item")"
         [ $? -ne 0 ] && throwError 118 "$tag"
 
-        initial_item="$item"
-
         if [[ "$is_precreate" == "false" && "$is_as_abstract" != "true" ]] || [[ "$tag" != "latest" ]]; then
-            # Only one non-precreate or non-latest item is allowed in the sequence and it should be the first one
             sorted_sequence_length=$(echo "$sorted_sequence" | jq -r "length")
             [ $? -ne 0 ] && throwError 1 "$sorted_sequence_length"
             if [[ "$sorted_sequence_length" -eq 0 ]]; then
                 sorted_sequence="[$item]"
             fi
-        
             continue
         fi
 
@@ -289,9 +268,9 @@ function sortSequence {
             continue
         fi
 
-        sorted_sequence="$(echo "$sorted_sequence" | jq -r ". + [$item]")"
+        new_sequence="$(jq -c -r --argjson seq "$sorted_sequence" --argjson it "$item" '$seq + [$it]' <<<"{}")"
+        sorted_sequence="$new_sequence"
         [ $? -ne 0 ] && throwError 1 "Error: $sorted_sequence"
-
     done
 
     echo "$sorted_sequence"
@@ -302,19 +281,21 @@ function sortSequence {
 function removeIsAnalysed {
     local sequence="$1"
 
-    local length
     local item
-    local i
     local new_sequence="[]"
+    local items_array
+    local next_sequence
 
-    length=$(echo "$sequence" | jq -r "length")
-    [ $? -ne 0 ] && throwError 1 "Error: $length"
+    local items_array
+    eval "items_array=($(echo "$sequence" | jq -e -r '.[] | (if type == "string" then . else tostring end) | @sh'))"
+    [ $? -ne 0 ] && throwError 1 "Error parsing sequence"
 
-    for (( i=0; i<length; i++ )); do
-        item=$(echo "$sequence" | jq -r ".[$i] | del(.isAnalysed)")
+    for item in "${items_array[@]}"; do
+        item=$(echo "$item" | jq -c -r 'del(.isAnalysed)')
         [ $? -ne 0 ] && throwError 1 "Error: $item"
 
-        new_sequence="$(echo "$new_sequence" | jq -r ". + [$item]")"
+        next_sequence="$(jq -c -r --argjson seq "$new_sequence" --argjson it "$item" '$seq + [$it]' <<<"{}")"
+        new_sequence="$next_sequence"
         [ $? -ne 0 ] && throwError 1 "Error: $new_sequence"
     done
 

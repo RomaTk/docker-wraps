@@ -127,7 +127,7 @@ function getRunAfterBuild {
         all_run_before_builds=$(getImplementSpecificData "${based_ons[$i]}" "$all_run_before_builds" "$file_with_config" "$config_dir" "run-after-build")
         [ $? -ne 0 ] && throwError 149 "$all_run_before_builds"
 
-        based_on_jq_array=$(echo "$based_on_jq_array" | jq -r ". + [\"${based_ons[$i]}\"]")
+        based_on_jq_array=$(jq -c -r --argjson arr "$based_on_jq_array" --arg val "${based_ons[$i]}" '$arr + [$val]' <<<"{}")
         [ $? -ne 0 ] && throwError 152 "$based_on_jq_array"
     done
 
@@ -138,17 +138,17 @@ function getRunAfterBuild {
 
         if [[ "$as_abstract" == "true" ]]; then
 
-            abstract_jq_array_commands_some_wrap=$(echo "$all_run_before_builds" | jq -r ".\"$wrap_name\"")
+            abstract_jq_array_commands_some_wrap=$(jq -c -r --arg key "$wrap_name" '.[$key]' <<<"$all_run_before_builds")
             [ $? -ne 0 ] && throwError 1
             if [[ "$abstract_jq_array_commands_some_wrap" != "null" ]]; then
-                abstract_jq_array_commands=$(echo "$abstract_jq_array_commands" | jq -r ". + $abstract_jq_array_commands_some_wrap")
+                abstract_jq_array_commands=$(jq -c -r --argjson arr "$abstract_jq_array_commands" --argjson ext "$abstract_jq_array_commands_some_wrap" '$arr + $ext' <<<"{}")
                 [ $? -ne 0 ] && throwError 1
             fi
 
-            all_run_before_builds=$(echo "$all_run_before_builds" | jq -r "del(.\"$wrap_name\")")
+            all_run_before_builds=$(jq -c -r --arg key "$wrap_name" 'del(.[$key])' <<<"$all_run_before_builds")
             [ $? -ne 0 ] && throwError 1
 
-            based_on_jq_array=$(echo "$based_on_jq_array" | jq -r ". - [\"$wrap_name\"]")
+            based_on_jq_array=$(jq -c -r --argjson arr "$based_on_jq_array" --arg val "$wrap_name" '$arr - [$val]' <<<"{}")
             [ $? -ne 0 ] && throwError 1
 
             continue
@@ -158,17 +158,17 @@ function getRunAfterBuild {
             continue
         fi
 
-        current_object=$(echo "$all_run_before_builds" | jq -r ".\"$wrap_name\"")
+        current_object=$(jq -c -r --arg key "$wrap_name" '.[$key]' <<<"$all_run_before_builds")
         [ $? -ne 0 ] && throwError 1
 
         if [[ "$current_object" == "null" ]]; then
-            all_run_before_builds=$(echo "$all_run_before_builds" | jq -r ".\"$wrap_name\" = $abstract_jq_array_commands")
+            all_run_before_builds=$(jq -c -r --argjson obj "$all_run_before_builds" --arg key "$wrap_name" --argjson val "$abstract_jq_array_commands" '$obj | .[$key] = $val' <<<"{}")
             [ $? -ne 0 ] && throwError 1
         else
-            current_object=$(echo "$current_object" | jq -r "$abstract_jq_array_commands + .")
+            current_object=$(jq -c -r --argjson arr1 "$abstract_jq_array_commands" --argjson arr2 "$current_object" '$arr1 + $arr2' <<<"{}")
             [ $? -ne 0 ] && throwError 1
 
-            all_run_before_builds=$(echo "$all_run_before_builds" | jq -r ".\"$wrap_name\" = $current_object")
+            all_run_before_builds=$(jq -c -r --argjson obj "$all_run_before_builds" --arg key "$wrap_name" --argjson val "$current_object" '$obj | .[$key] = $val' <<<"{}")
             [ $? -ne 0 ] && throwError 1
         fi
 

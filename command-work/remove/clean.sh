@@ -9,7 +9,6 @@ function clean {
     local wrap
     local clean_array
     local length
-    local i
     local command
 
     file_to_source="$config_dir/find-wrap.sh"
@@ -43,8 +42,11 @@ function clean {
 
     echo "Cleaning wrap \"$wrap_name\""
 
-    for (( i=0; i<length; i++ )); do
-        command=$(echo "$clean_array" | jq -r ".[$i]")
+    local items_array
+    eval "items_array=($(echo "$clean_array" | jq -r '.[] | @sh'))"
+    [ $? -ne 0 ] && throwError 120 "Error getting commands"
+
+    for command in "${items_array[@]}"; do
         echo "CLEAN commnand: $command"
         (eval "$command")
         [ $? -ne 0 ] && throwError 121 "$command"
