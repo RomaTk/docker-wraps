@@ -113,9 +113,8 @@ function goThrewSequence {
         new_sequence="[]"
 
         # Read JSON array elements into bash array
-        local items_array
-    eval "items_array=($(echo "$sequence" | jq -e -r '.[] | (if type == "string" then . else tostring end) | @sh'))"
-    [ $? -ne 0 ] && throwError 1 "Error parsing sequence"
+        eval "items_array=($(echo "$sequence" | jq -e -r '.[] | (if type == "string" then . else tostring end) | @sh'))"
+        [ $? -ne 0 ] && throwError 1 "Error parsing sequence"
 
         for item in "${items_array[@]}"; do
             is_precreate="$(getIsPrecreate "$item")"
@@ -168,8 +167,7 @@ function changeNewItemsAsAbstractOnly {
     local is_precreate
     local new_items="[]"
     local items_array
-
-    local items_array
+    local new_sequence
     eval "items_array=($(echo "$items" | jq -e -r '.[] | (if type == "string" then . else tostring end) | @sh'))"
     [ $? -ne 0 ] && throwError 1 "Error parsing items"
 
@@ -186,8 +184,8 @@ function changeNewItemsAsAbstractOnly {
         fi
 
         new_sequence="$(jq -c -r --argjson seq "$new_items" --argjson it "$item" '$seq + [$it]' <<<"{}")"
+        [ $? -ne 0 ] && throwError 1 "Error: $new_sequence"
         new_items="$new_sequence"
-        [ $? -ne 0 ] && throwError 1 "Error: $new_items"
     done
 
     echo "$new_items"
@@ -206,8 +204,6 @@ function isInSequenceAlready {
 
     item_to_check_name="$(getBasedOnName "$item_to_check")"
     [ $? -ne 0 ] && throwError 117 "$item_to_check_name"
-
-    local items_array
     eval "items_array=($(echo "$sequence" | jq -e -r '.[] | (if type == "string" then . else tostring end) | @sh'))"
     [ $? -ne 0 ] && throwError 1 "Error parsing sequence"
 
@@ -237,8 +233,6 @@ function sortSequence {
     local is_in_sequence_already
     local items_array
     local new_sequence
-
-    local items_array
     eval "items_array=($(echo "$sequence" | jq -e -r '.[] | (if type == "string" then . else tostring end) | @sh'))"
     [ $? -ne 0 ] && throwError 1 "Error parsing sequence"
 
@@ -253,6 +247,7 @@ function sortSequence {
         [ $? -ne 0 ] && throwError 118 "$tag"
 
         if [[ "$is_precreate" == "false" && "$is_as_abstract" != "true" ]] || [[ "$tag" != "latest" ]]; then
+            # Only one non-precreate or non-latest item is allowed in the sequence and it should be the first one
             sorted_sequence_length=$(echo "$sorted_sequence" | jq -r "length")
             [ $? -ne 0 ] && throwError 1 "$sorted_sequence_length"
             if [[ "$sorted_sequence_length" -eq 0 ]]; then
@@ -269,8 +264,8 @@ function sortSequence {
         fi
 
         new_sequence="$(jq -c -r --argjson seq "$sorted_sequence" --argjson it "$item" '$seq + [$it]' <<<"{}")"
+        [ $? -ne 0 ] && throwError 1 "Error: $new_sequence"
         sorted_sequence="$new_sequence"
-        [ $? -ne 0 ] && throwError 1 "Error: $sorted_sequence"
     done
 
     echo "$sorted_sequence"
@@ -285,8 +280,6 @@ function removeIsAnalysed {
     local new_sequence="[]"
     local items_array
     local next_sequence
-
-    local items_array
     eval "items_array=($(echo "$sequence" | jq -e -r '.[] | (if type == "string" then . else tostring end) | @sh'))"
     [ $? -ne 0 ] && throwError 1 "Error parsing sequence"
 
@@ -295,8 +288,8 @@ function removeIsAnalysed {
         [ $? -ne 0 ] && throwError 1 "Error: $item"
 
         next_sequence="$(jq -c -r --argjson seq "$new_sequence" --argjson it "$item" '$seq + [$it]' <<<"{}")"
+        [ $? -ne 0 ] && throwError 1 "Error: $next_sequence"
         new_sequence="$next_sequence"
-        [ $? -ne 0 ] && throwError 1 "Error: $new_sequence"
     done
 
     echo "$new_sequence"
