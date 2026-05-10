@@ -5,7 +5,10 @@ function wrapWeightAll {
     local file_with_config="$2"
     local unique_prefix="$3"
 
-    local file_to_source
+    local file_to_source="$scripts_dir/command-work/wrapweight/utils.sh"
+    source "$file_to_source"
+    [ $? -ne 0 ] && exit 111
+
     local wrap_names
     local wrap_names_length
     local i
