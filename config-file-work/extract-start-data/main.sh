@@ -285,14 +285,14 @@ function convertVolumesToOptions {
 function convertEntrypointValuesToOptions {
     local entrypoint_args_string
 
-    local length_array
     local entrypoint_commands_string=""
     local entrypoint_command
     local command_value
     local command_continue_in_error
 
     local cmd
-    local i
+    local items_array
+    local is_first="true"
 
     entrypoint_args_string=$(echo "$entrypoint_args" | jq -r 'join(" ")')
     if [ $? -ne 0 ]; then
@@ -300,19 +300,13 @@ function convertEntrypointValuesToOptions {
         exit 1
     fi
 
-    length_array=$(echo "$entrypoint_commands" | jq -r ". | length")
+    eval "items_array=($(echo "$entrypoint_commands" | jq -e -c -r '.[] | tostring | @sh'))"
     if [ $? -ne 0 ]; then
-        echo "Error within jq getting length of entrypoint_commands" >&2
+        echo "Error parsing entrypoint_commands array" >&2
         exit 1
     fi
 
-    for (( i=0; i<length_array; i++ )); do
-        entrypoint_command=$(echo "$entrypoint_commands" | jq -r ".[$i]")   
-        if [ $? -ne 0 ]; then
-            echo "Error within jq getting entrypoint_command" >&2
-            exit 1
-        fi
-
+    for entrypoint_command in "${items_array[@]}"; do
         command_value=$(echo "$entrypoint_command" | jq -r ".value")
         if [ $? -ne 0 ]; then
             echo "Error within jq getting value of entrypoint_command" >&2
@@ -325,8 +319,9 @@ function convertEntrypointValuesToOptions {
             exit 1
         fi
 
-        if [[ "$i" -eq 0 ]]; then
+        if [[ "$is_first" == "true" ]]; then
             entrypoint_commands_string="$command_value"
+            is_first="false"
         else
             entrypoint_commands_string="$entrypoint_commands_string $command_value"
         fi
@@ -339,7 +334,7 @@ function convertEntrypointValuesToOptions {
         fi
     done
 
-    if [[ "$length_array" -gt 0 ]]; then
+    if [[ ${#items_array[@]} -gt 0 ]]; then
         entrypoint_commands_string="$entrypoint_commands_string exit 0"
     fi
 
@@ -347,7 +342,7 @@ function convertEntrypointValuesToOptions {
     if [[ ${#cmd} -gt 0 && ${#entrypoint_commands_string} -gt 0 ]]; then
         cmd="$cmd \"${entrypoint_commands_string//\"/\\\"}\""
     elif [[ ${#entrypoint_commands_string} -gt 0 ]]; then
-        cmd=cmd="\"${entrypoint_commands_string//\"/\\\"}\""
+        cmd="\"${entrypoint_commands_string//\"/\\\"}\""
     fi
 
     echo "$cmd"
