@@ -79,25 +79,29 @@ function calcWeight {
 
         getSequence "$scripts_dir" "$file_with_config" "$unique_prefix" "$wrap_name"
     )
+    [ $? -ne 0 ] && throwError 114 "$sequence"
 
-    if [ $? -eq 0 ]; then
-        sequence_length=$(echo "$sequence" | jq -r "length")
-        if [ $? -eq 0 ]; then
-            for (( j=0; j<sequence_length; j++ )); do
-                seq_item=$(echo "$sequence" | jq -r ".[$j]")
+    sequence_length=$(echo "$sequence" | jq -r "length")
+    [ $? -ne 0 ] && throwError 1 "Error: $sequence_length"
 
-                # Use jq to get the name directly to avoid needing to source extra scripts or if they are already sourced
-                seq_wrap_name=$(echo "$seq_item" | jq -r ".name")
+    for (( j=0; j<sequence_length; j++ )); do
+        seq_item=$(echo "$sequence" | jq -r ".[$j]")
+        [ $? -ne 0 ] && throwError 1 "Error: $seq_item"
 
-                if [[ -n "$seq_wrap_name" && "$seq_wrap_name" != "null" ]]; then
-                    is_in_config=$(echo "$all_wrap_names" | jq -r --arg name "$seq_wrap_name" 'any(. == $name)')
-                    if [[ "$is_in_config" == "true" ]]; then
-                        current_weights=$(echo "$current_weights" | jq -r --arg name "$seq_wrap_name" '.[$name] = (.[$name] + 1)')
-                    fi
-                fi
-            done
+        # Use jq to get the name directly to avoid needing to source extra scripts or if they are already sourced
+        seq_wrap_name=$(echo "$seq_item" | jq -r ".name")
+        [ $? -ne 0 ] && throwError 1 "Error: $seq_wrap_name"
+
+        if [[ -n "$seq_wrap_name" && "$seq_wrap_name" != "null" ]]; then
+            is_in_config=$(echo "$all_wrap_names" | jq -r --arg name "$seq_wrap_name" 'any(. == $name)')
+            [ $? -ne 0 ] && throwError 1 "Error: $is_in_config"
+
+            if [[ "$is_in_config" == "true" ]]; then
+                current_weights=$(echo "$current_weights" | jq -r --arg name "$seq_wrap_name" '.[$name] = (.[$name] + 1)')
+                [ $? -ne 0 ] && throwError 1 "Error: $current_weights"
+            fi
         fi
-    fi
+    done
 
     echo "$current_weights"
 }

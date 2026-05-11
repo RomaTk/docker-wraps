@@ -88,9 +88,9 @@ function forWrapweight {
             wrapWeightAll "$scripts_dir" "$file_with_config" "$unique_prefix"
         )
         exit_code=$?
-        [ $exit_code -ne 0 ] && throwError 117 "Exit code was: $exit_code"
+        [ $exit_code -ne 0 ] && throwError 128 "Exit code was: $exit_code"
     else
-        throwError 121 "Mentioned: $subcommand"
+        throwError 129 "Mentioned: $subcommand"
     fi
 }
 
