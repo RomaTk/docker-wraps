@@ -194,6 +194,7 @@ You can use relative path depending where your `main.sh` is located. You are fre
 | `start` | Starts the container or service defined by the configuration and wrap. | `./main.sh start <wrap_name>` |
 | `stop` | Stops the running container or service defined by the configuration and wrap. | `./main.sh stop <wrap_name>` |
 | `kill` | Forcefully stops (kills) the running container or service defined by the configuration and wrap. | `./main.sh kill <wrap_name>` |
+| `wrapweight all` | Calculates the weight (number of dependencies in the basedOn sequence) for all wraps in the configuration. | `./main.sh wrapweight all` |
 
 Replace `<wrap_name>` with your actual paths and wrap name as needed.
 
