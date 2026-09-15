@@ -61,6 +61,12 @@ function throwError {
         127)
             echo "Failed to remove temporary file" >&2
             ;;
+        128)
+            echo "Problem with wrapweight command" >&2
+            ;;
+        129)
+            echo "Unknown wrapweight subcommand" >&2
+            ;;
         *)
             echo "Unknown error" >&2
             exit 1
