@@ -79,28 +79,28 @@ function insertRunAfterBuildToRunBeforeBuild {
 }
 
 function runAfterBuildDo {
-    local length_of_array
     local in_the_end_array
     local command
+    local items_array
 
     if [[ "$is_to_run_in_the_end" == "false" ]]; then
         exit 0
     fi
 
-    in_the_end_array=$(echo "$run_before_build" | jq -r '.inTheEnd')
+    in_the_end_array=$(echo "$run_before_build" | jq -r ".inTheEnd")
     [ $? -ne 0 ] && throwError 1 "$in_the_end_array"
 
     if [[ "$in_the_end_array" == "null" ]]; then
         exit 0
     fi
 
-    length_of_array=$(echo "$in_the_end_array" | jq -r '. | length')
-    [ $? -ne 0 ] && throwError 1 "$length_of_array"
-    
-    for (( i=0; i<$length_of_array; i++ )); do
-        command=$(echo "$in_the_end_array" | jq -r ".[$i]")
-        [ $? -ne 0 ] && throwError 1 "$command"
+    items_array=()
+    while IFS= read -r line; do
+        items_array+=("$line")
+    done < <(echo "$in_the_end_array" | jq -c -r ".[]")
+    [ $? -ne 0 ] && throwError 1 "Error parsing in_the_end_array"
 
+    for command in "${items_array[@]}"; do
         echo "COMMAND: $command"
         (eval "$command")
         [ $? -ne 0 ] && throwError 156
