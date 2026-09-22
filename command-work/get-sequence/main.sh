@@ -83,7 +83,7 @@ function getItemsForSequence {
     fi
 
     type="$(echo "$based_on" | jq -r "type")"
-    [ $? -ne 0 ] && throwError 1 "Error: $type"
+    [ $? -ne 0 ] && throwError 125 "Error checking basedOn type: $type"
 
     if [[ "$type" == "array" ]]; then
         echo "$based_on"
@@ -115,7 +115,7 @@ function goThrewSequence {
 
         # Batch extract fields for all items to minimize jq calls in the loop
         mapfile -d $'\0' -t items_data < <(echo "$sequence" | jq -j '.[] | (.precreate // false, "\u0000", .asAbstract // false, "\u0000", .isAnalysed // false, "\u0000", .name // "", "\u0000", tostring, "\u0000")')
-        [ $? -ne 0 ] && throwError 1 "Error: failed to mapfile sequence data"
+        [ $? -ne 0 ] && throwError 126 "Error mapping sequence data in goThrewSequence"
 
         for (( i=0; i<${#items_data[@]}; i+=5 )); do
             is_precreate="${items_data[i]}"
@@ -140,17 +140,17 @@ function goThrewSequence {
                 fi
 
                 item="$(echo "$item" | jq -c '.isAnalysed=true')"
-                [ $? -ne 0 ] && throwError 1 "Error: $item"
+                [ $? -ne 0 ] && throwError 127 "Error setting isAnalysed in goThrewSequence: $item"
 
                 # Append using jq array concatenation
                 new_sequence="$(echo "$new_sequence" | jq -c --argjson n "$new_items" --argjson i "$item" '. + $n + [$i]')"
-                [ $? -ne 0 ] && throwError 1 "Error: $new_sequence"
+                [ $? -ne 0 ] && throwError 128 "Error concatenating new items in goThrewSequence: $new_sequence"
 
                 changeMade="true"
             else
                 # Append single item
                 new_sequence="$(echo "$new_sequence" | jq -c --argjson i "$item" '. + [$i]')"
-                [ $? -ne 0 ] && throwError 1 "Error: $new_sequence"
+                [ $? -ne 0 ] && throwError 129 "Error appending single item in goThrewSequence: $new_sequence"
             fi
         done
 
@@ -166,7 +166,7 @@ function changeNewItemsAsAbstractOnly {
 
     local new_items
     new_items="$(echo "$items" | jq -c 'map(if (.precreate == true or .asAbstract == true) then .asAbstract = true | .precreate = false else . end)')"
-    [ $? -ne 0 ] && throwError 1 "Error: $new_items"
+    [ $? -ne 0 ] && throwError 130 "Error setting asAbstract in changeNewItemsAsAbstractOnly: $new_items"
 
     echo "$new_items"
     exit 0
@@ -188,7 +188,7 @@ function sortSequence {
             end
         )
     ')"
-    [ $? -ne 0 ] && throwError 1 "Error: $sorted_sequence"
+    [ $? -ne 0 ] && throwError 131 "Error sorting sequence in sortSequence: $sorted_sequence"
 
     echo "$sorted_sequence"
     exit 0
@@ -200,7 +200,7 @@ function removeIsAnalysed {
 
     local new_sequence
     new_sequence="$(echo "$sequence" | jq -c 'map(del(.isAnalysed))')"
-    [ $? -ne 0 ] && throwError 1 "Error: $new_sequence"
+    [ $? -ne 0 ] && throwError 132 "Error removing isAnalysed in removeIsAnalysed: $new_sequence"
 
     echo "$new_sequence"
     exit 0

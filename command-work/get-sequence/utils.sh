@@ -25,32 +25,44 @@ function throwError {
         115)
             echo "<- Problem with goThrewSequence function" >&2
             ;;
-        116)
-            echo "<- Problem with getIsPrecreate function" >&2
-            ;;
         117)
             echo "<- Problem with getBasedOnName function" >&2
-            ;;
-        118)
-            echo "<- Problem with getBasedOnTag function" >&2
             ;;
         119)
             echo "<- Problem with sortSequence function" >&2
             ;;
-        120)
-            echo "<- Problem with isInSequenceAlready function" >&2
-            ;;
         121)
-            echo "<- Problem with addToSequence function" >&2
+            echo "<- Problem with removeIsAnalysed function" >&2
             ;;
         122)
             echo "No wrap found" >&2
             ;;
-        123)
-            echo "<- Problem with getAsAbstract function" >&2
-            ;;
         124)
             echo "<- Problem with changeNewItemsAsAbstractOnly function" >&2
+            ;;
+        125)
+            echo "<- Problem checking basedOn type in getItemsForSequence" >&2
+            ;;
+        126)
+            echo "<- Problem mapping sequence data in goThrewSequence" >&2
+            ;;
+        127)
+            echo "<- Problem setting isAnalysed in goThrewSequence" >&2
+            ;;
+        128)
+            echo "<- Problem concatenating new items in goThrewSequence" >&2
+            ;;
+        129)
+            echo "<- Problem appending single item in goThrewSequence" >&2
+            ;;
+        130)
+            echo "<- Problem setting asAbstract in changeNewItemsAsAbstractOnly" >&2
+            ;;
+        131)
+            echo "<- Problem sorting sequence in sortSequence" >&2
+            ;;
+        132)
+            echo "<- Problem removing isAnalysed in removeIsAnalysed" >&2
             ;;
         *)
             echo "Unknown error" >&2
