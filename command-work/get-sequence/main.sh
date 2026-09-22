@@ -83,7 +83,7 @@ function getItemsForSequence {
     fi
 
     type="$(echo "$based_on" | jq -r "type")"
-    [ $? -ne 0 ] && throwError 1 "Error: $type"
+    [ $? -ne 0 ] && throwError 125 "Error checking basedOn type: $type"
 
     if [[ "$type" == "array" ]]; then
         echo "$based_on"
@@ -97,46 +97,39 @@ function getItemsForSequence {
 function goThrewSequence {
     local sequence="$1"
 
-    local length
     local item
     local is_precreate
     local is_as_abstract
     local is_analysed
     local name
-    local i
     local new_items
-    local items_length
-
     local new_sequence
 
     local changeMade="true"
+    local items_data
+    local i
 
     while [[ "$changeMade" == "true" ]]; do
         changeMade="false"
-
         new_sequence="[]"
 
-        length=$(echo "$sequence" | jq -r "length")
-        [ $? -ne 0 ] && throwError 1 "Error: $length"
+        # Batch extract fields for all items to minimize jq calls in the loop
+        mapfile -d $'\0' -t items_data < <(echo "$sequence" | jq -j '.[] | (.precreate // false, "\u0000", .asAbstract // false, "\u0000", .isAnalysed // false, "\u0000", .name // "", "\u0000", tostring, "\u0000")')
+        [ $? -ne 0 ] && throwError 126 "Error mapping sequence data in goThrewSequence"
 
-        for (( i=0; i<length; i++ )); do
-
-            item=$(echo "$sequence" | jq -r ".[$i]")
-            [ $? -ne 0 ] && throwError 1 "Error: $item"
-
-            is_precreate="$(getIsPrecreate "$item")"
-            [ $? -ne 0 ] && throwError 116 "$is_precreate"
-
-            is_as_abstract="$(getAsAbstract "$item")"
-            [ $? -ne 0 ] && throwError 123 "$is_as_abstract"
-
-            is_analysed="$(echo "$item" | jq -r ".isAnalysed")"
-            [ $? -ne 0 ] && throwError 1 "Error: $is_analysed"
+        for (( i=0; i<${#items_data[@]}; i+=5 )); do
+            is_precreate="${items_data[i]}"
+            is_as_abstract="${items_data[i+1]}"
+            is_analysed="${items_data[i+2]}"
+            name="${items_data[i+3]}"
+            item="${items_data[i+4]}"
 
             if [[ "$is_precreate" == "true" || "$is_as_abstract" == "true" ]] && [[ "$is_analysed" != "true" ]]; then
 
-                name="$(getBasedOnName "$item")"
-                [ $? -ne 0 ] && throwError 117 "$name"
+                # Check for empty name which would cause getItemsForSequence to fail
+                if [[ -z "$name" ]]; then
+                    throwError 117 "Empty name"
+                fi
 
                 new_items="$(getItemsForSequence "$name")"
                 [ $? -ne 0 ] && throwError 114 "$new_items"
@@ -146,153 +139,56 @@ function goThrewSequence {
                     [ $? -ne 0 ] && throwError 124 "$new_items"
                 fi
 
-                item=$(echo "$item" | jq -r ".isAnalysed=true")
-                [ $? -ne 0 ] && throwError 1 "Error: $item"
+                item="$(echo "$item" | jq -c '.isAnalysed=true')"
+                [ $? -ne 0 ] && throwError 127 "Error setting isAnalysed in goThrewSequence: $item"
 
-                new_sequence=$(echo "$new_sequence" | jq -r ". + $new_items + [$item]")
-                [ $? -ne 0 ] && throwError 1 "Error: $new_sequence"
+                # Append using jq array concatenation
+                new_sequence="$(echo "$new_sequence" | jq -c --argjson n "$new_items" --argjson i "$item" '. + $n + [$i]')"
+                [ $? -ne 0 ] && throwError 128 "Error concatenating new items in goThrewSequence: $new_sequence"
 
                 changeMade="true"
             else
-                new_sequence=$(echo "$new_sequence" | jq -r ". + [$item]")
-                [ $? -ne 0 ] && throwError 1 "Error: $new_sequence"
+                # Append single item
+                new_sequence="$(echo "$new_sequence" | jq -c --argjson i "$item" '. + [$i]')"
+                [ $? -ne 0 ] && throwError 129 "Error appending single item in goThrewSequence: $new_sequence"
             fi
-
         done
 
         sequence="$new_sequence"        
-        
     done
 
     echo "$sequence"
-
     exit 0
 }
 
 function changeNewItemsAsAbstractOnly {
     local items="$1"
 
-    local length
-    local item
-    local is_as_abstract
-    local is_precreate
-    local i
-    local new_items="[]"
-
-    length=$(echo "$items" | jq -r "length")
-    [ $? -ne 0 ] && throwError 1 "Error: $length"
-
-    for (( i=0; i<length; i++ )); do
-        item=$(echo "$items" | jq -r ".[$i]")
-        [ $? -ne 0 ] && throwError 1 "Error: $item"
-
-        is_precreate="$(getIsPrecreate "$item")"
-        [ $? -ne 0 ] && throwError 116 "$is_precreate"
-
-        is_as_abstract="$(getAsAbstract "$item")"
-        [ $? -ne 0 ] && throwError 123 "$is_as_abstract"
-
-        if [[ "$is_precreate" == "true" || "$is_as_abstract" == "true" ]]; then
-            item="$(echo "$item" | jq -r ".asAbstract=true | .precreate=false")"
-            [ $? -ne 0 ] && throwError 1 "Error: $item"
-        fi
-
-        new_items="$(echo "$new_items" | jq -r ". + [$item]")"
-        [ $? -ne 0 ] && throwError 1 "Error: $new_items"
-    done
+    local new_items
+    new_items="$(echo "$items" | jq -c 'map(if (.precreate == true or .asAbstract == true) then .asAbstract = true | .precreate = false else . end)')"
+    [ $? -ne 0 ] && throwError 130 "Error setting asAbstract in changeNewItemsAsAbstractOnly: $new_items"
 
     echo "$new_items"
     exit 0
 }
 
 
-function isInSequenceAlready {
-    local sequence="$1"
-    local item_to_check="$2"
-
-    local length
-    local item
-    local name
-    local item_to_check_name
-    local i
-
-    length=$(echo "$sequence" | jq -r "length")
-    [ $? -ne 0 ] && throwError 1 "Error: $length"
-
-    item_to_check_name="$(getBasedOnName "$item_to_check")"
-    [ $? -ne 0 ] && throwError 117 "$item_to_check_name"
-
-    for (( i=0; i<length; i++ )); do
-        item=$(echo "$sequence" | jq -r ".[$i]")
-        [ $? -ne 0 ] && throwError 1 "Error: $item"
-
-        name="$(getBasedOnName "$item")"
-        [ $? -ne 0 ] && throwError 117 "$name"
-
-        if [[ "$name" == "$item_to_check_name" ]]; then
-            echo "true"
-            exit 0
-        fi
-    done
-
-    echo "false"
-    exit 0
-}
-
 function sortSequence {
     local sequence="$1"
 
-    local length
-    local sorted_sequence="[]"
-    local sorted_sequence_length
-    local item
-    local is_precreate
-    local is_as_abstract
-    local initial_item
-    local tag
-    local i
-    local is_in_sequence_already
-
-    length=$(echo "$sequence" | jq -r "length")
-    [ $? -ne 0 ] && throwError 1 "Error: $length"
-
-    for (( i=0; i<length; i++ )); do
-        item=$(echo "$sequence" | jq -r ".[$i]")
-        [ $? -ne 0 ] && throwError 1 "Error: $item"
-
-        is_precreate="$(getIsPrecreate "$item")"
-        [ $? -ne 0 ] && throwError 116 "$is_precreate"
-
-        is_as_abstract="$(getAsAbstract "$item")"
-        [ $? -ne 0 ] && throwError 123 "$is_as_abstract"
-
-        tag="$(getBasedOnTag "$item")"
-        [ $? -ne 0 ] && throwError 118 "$tag"
-
-        initial_item="$item"
-
-        if [[ "$is_precreate" == "false" && "$is_as_abstract" != "true" ]] || [[ "$tag" != "latest" ]]; then
-            # Only one non-precreate or non-latest item is allowed in the sequence and it should be the first one
-            sorted_sequence_length=$(echo "$sorted_sequence" | jq -r "length")
-            [ $? -ne 0 ] && throwError 1 "$sorted_sequence_length"
-            if [[ "$sorted_sequence_length" -eq 0 ]]; then
-                sorted_sequence="[$item]"
-            fi
-        
-            continue
-        fi
-
-        is_in_sequence_already="$(isInSequenceAlready "$sorted_sequence" "$item")"
-        [ $? -ne 0 ] && throwError 120 "$is_in_sequence_already"
-
-        if [[ "$is_in_sequence_already" == "true" ]]; then
-            continue
-        fi
-
-        sorted_sequence="$(echo "$sorted_sequence" | jq -r ". + [$item]")"
-        [ $? -ne 0 ] && throwError 1 "Error: $sorted_sequence"
-
-    done
+    local sorted_sequence
+    sorted_sequence="$(echo "$sequence" | jq -c '
+        reduce .[] as $item ([];
+            if (($item.precreate == false and $item.asAbstract != true) or $item.tag != "latest") then
+                if length == 0 then [$item] else . end
+            elif any(.[]; .name == $item.name) then
+                .
+            else
+                . + [$item]
+            end
+        )
+    ')"
+    [ $? -ne 0 ] && throwError 131 "Error sorting sequence in sortSequence: $sorted_sequence"
 
     echo "$sorted_sequence"
     exit 0
@@ -302,21 +198,9 @@ function sortSequence {
 function removeIsAnalysed {
     local sequence="$1"
 
-    local length
-    local item
-    local i
-    local new_sequence="[]"
-
-    length=$(echo "$sequence" | jq -r "length")
-    [ $? -ne 0 ] && throwError 1 "Error: $length"
-
-    for (( i=0; i<length; i++ )); do
-        item=$(echo "$sequence" | jq -r ".[$i] | del(.isAnalysed)")
-        [ $? -ne 0 ] && throwError 1 "Error: $item"
-
-        new_sequence="$(echo "$new_sequence" | jq -r ". + [$item]")"
-        [ $? -ne 0 ] && throwError 1 "Error: $new_sequence"
-    done
+    local new_sequence
+    new_sequence="$(echo "$sequence" | jq -c 'map(del(.isAnalysed))')"
+    [ $? -ne 0 ] && throwError 132 "Error removing isAnalysed in removeIsAnalysed: $new_sequence"
 
     echo "$new_sequence"
     exit 0
