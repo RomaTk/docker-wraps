@@ -64,6 +64,15 @@ function throwError {
         132)
             echo "<- Problem removing isAnalysed in removeIsAnalysed" >&2
             ;;
+        133)
+            echo "<- Problem sorting by wrap_weights" >&2
+            ;;
+        134)
+            echo "<- Sequence item missing name or name not found in wrap_weights" >&2
+            ;;
+        135)
+            echo "<- Problem with sortByWrapWeights function" >&2
+            ;;
         *)
             echo "Unknown error" >&2
             exit 1

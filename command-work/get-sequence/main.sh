@@ -5,6 +5,7 @@ function getSequence {
     local file_with_config="$2"
     local unique_prefix="$3"
     local wrap_name="$4"
+    local wrap_weights="$5"
 
     local current_dir="$scripts_dir/command-work/get-sequence"
     local config_dir="$scripts_dir/config-file-work"
@@ -56,7 +57,37 @@ function getSequence {
     sequence="$(removeIsAnalysed "$sequence")"
     [ $? -ne 0 ] && throwError 121 "$sequence"
 
+    if [[ -n "$wrap_weights" && "$wrap_weights" != "null" && "$wrap_weights" != "{}" ]]; then
+        sequence="$(sortByWrapWeights "$sequence" "$wrap_weights")"
+        [ $? -ne 0 ] && throwError 135 "$sequence"
+    fi
+
     echo "$sequence" | jq '.'
+    exit 0
+}
+
+function sortByWrapWeights {
+    local sequence="$1"
+    local wrap_weights="$2"
+
+    local has_missing
+    local sorted_sequence
+
+    # Check for missing names in items or names missing from wrap_weights
+    has_missing="$(echo "$sequence" | jq -e --argjson weights "$wrap_weights" 'any(.[]; .name == null or .name == "" or ($weights[.name] == null))')"
+    if [ $? -ne 0 ] && [[ "$has_missing" != "false" && "$has_missing" != "true" ]]; then
+        throwError 133 "jq error checking for missing names"
+    fi
+
+    if [[ "$has_missing" == "true" ]]; then
+        throwError 134 "Sequence item missing name or name not found in wrap_weights"
+    fi
+
+    # Perform stable sort by wrap_weights descending
+    sorted_sequence="$(echo "$sequence" | jq -c --argjson weights "$wrap_weights" 'sort_by(-$weights[.name])')"
+    [ $? -ne 0 ] && throwError 133 "Failed to sort sequence by wrap_weights"
+
+    echo "$sorted_sequence"
     exit 0
 }
 
