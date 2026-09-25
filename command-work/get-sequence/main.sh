@@ -56,7 +56,7 @@ function getSequence {
     sequence="$(removeIsAnalysed "$sequence")"
     [ $? -ne 0 ] && throwError 121 "$sequence"
 
-    echo "$sequence"
+    echo "$sequence" | jq '.'
     exit 0
 }
 
