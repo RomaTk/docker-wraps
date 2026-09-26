@@ -100,30 +100,19 @@ function forGet {
     local what
     local type
     local wrap_name
-    local no_weight="false"
+
 
     if [[ ${#command_as_args[@]} -lt 3 ]]; then
         throwError 120 "Length is less than 3"
     fi
     what="${command_as_args[1]}"
-
     if [[ "$what" == "name" ]]; then
         if [[ ${#command_as_args[@]} -lt 4 ]]; then
             throwError 120 "Length is less than 4"
         fi
         type="${command_as_args[2]}"
         wrap_name="${command_as_args[3]}"
-    elif [[ "$what" == "sequence" ]]; then
-        if [[ "${command_as_args[2]}" == "--no-weight" ]]; then
-            if [[ ${#command_as_args[@]} -lt 4 ]]; then
-                throwError 120 "Length is less than 4"
-            fi
-            no_weight="true"
-            wrap_name="${command_as_args[3]}"
-        else
-            wrap_name="${command_as_args[2]}"
-        fi
-    else
+    elif [[ "$what" != "sequence" ]]; then
         wrap_name="${command_as_args[2]}"
     fi
 
@@ -140,7 +129,7 @@ function forGet {
             [ $exit_code -ne 0 ] && throwError 117 "Exit code was: $exit_code"
             ;;
         "sequence")
-            forGetSequence "$wrap_name" "$no_weight"
+            forGetSequence
             ;;
         *)
             throwError 121 "Mentioned: $what"
@@ -149,11 +138,21 @@ function forGet {
 }
 
 function forGetSequence {
-    local wrap_name="$1"
-    local no_weight="$2"
     local file_to_source
     local weights
     local exit_code
+    local wrap_name
+    local no_weight="false"
+
+    if [[ "${command_as_args[2]}" == "--no-weight" ]]; then
+        if [[ ${#command_as_args[@]} -lt 4 ]]; then
+            throwError 120 "Length is less than 4"
+        fi
+        no_weight="true"
+        wrap_name="${command_as_args[3]}"
+    else
+        wrap_name="${command_as_args[2]}"
+    fi
 
     if [[ "$no_weight" == "false" ]]; then
         file_to_source="$current_dir/wrapweight/main.sh"
