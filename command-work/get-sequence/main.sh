@@ -73,18 +73,18 @@ function sortByWrapWeights {
     local has_missing
     local sorted_sequence
 
-    # Check for missing names in items or names missing from wrap_weights
-    has_missing="$(echo "$sequence" | jq -e --argjson weights "$wrap_weights" 'any(.[]; .name == null or .name == "" or ($weights[.name] == null))')"
+    # Check for missing names in items
+    has_missing="$(echo "$sequence" | jq -e 'any(.[]; .name == null or .name == "")')"
     if [ $? -ne 0 ] && [[ "$has_missing" != "false" && "$has_missing" != "true" ]]; then
         throwError 133 "jq error checking for missing names"
     fi
 
     if [[ "$has_missing" == "true" ]]; then
-        throwError 134 "Sequence item missing name or name not found in wrap_weights"
+        throwError 134 "Sequence item missing name"
     fi
 
-    # Perform stable sort by wrap_weights descending
-    sorted_sequence="$(echo "$sequence" | jq -c --argjson weights "$wrap_weights" 'sort_by(-$weights[.name])')"
+    # Perform stable sort by wrap_weights descending (default weight 0 if not found)
+    sorted_sequence="$(echo "$sequence" | jq -c --argjson weights "$wrap_weights" 'sort_by(-($weights[.name] // 0))')"
     [ $? -ne 0 ] && throwError 133 "Failed to sort sequence by wrap_weights"
 
     echo "$sorted_sequence"

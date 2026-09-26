@@ -100,22 +100,32 @@ function forGet {
     local what
     local type
     local wrap_name
+    local no_weight="false"
 
     if [[ ${#command_as_args[@]} -lt 3 ]]; then
         throwError 120 "Length is less than 3"
     fi
     what="${command_as_args[1]}"
+
     if [[ "$what" == "name" ]]; then
         if [[ ${#command_as_args[@]} -lt 4 ]]; then
             throwError 120 "Length is less than 4"
         fi
         type="${command_as_args[2]}"
         wrap_name="${command_as_args[3]}"
+    elif [[ "$what" == "sequence" ]]; then
+        if [[ "${command_as_args[2]}" == "--no-weight" ]]; then
+            if [[ ${#command_as_args[@]} -lt 4 ]]; then
+                throwError 120 "Length is less than 4"
+            fi
+            no_weight="true"
+            wrap_name="${command_as_args[3]}"
+        else
+            wrap_name="${command_as_args[2]}"
+        fi
     else
         wrap_name="${command_as_args[2]}"
     fi
-
-   
 
     case $what in
         "name")
@@ -130,20 +140,38 @@ function forGet {
             [ $exit_code -ne 0 ] && throwError 117 "Exit code was: $exit_code"
             ;;
         "sequence")
-            file_to_source="$current_dir/get-sequence/main.sh"
-            source "$file_to_source"
-            [ $? -ne 0 ] && throwError 111 "$file_to_source"
-            (
-                getSequence "$scripts_dir" "$file_with_config" "$unique_prefix" "$wrap_name"
-            )
-            exit_code=$?
-            [ $exit_code -ne 0 ] && throwError 124 "Exit code was: $exit_code"
+            forGetSequence "$wrap_name" "$no_weight"
             ;;
         *)
             throwError 121 "Mentioned: $what"
             ;;
     esac
-    
+}
+
+function forGetSequence {
+    local wrap_name="$1"
+    local no_weight="$2"
+    local file_to_source
+    local weights
+    local exit_code
+
+    if [[ "$no_weight" == "false" ]]; then
+        file_to_source="$current_dir/wrapweight/main.sh"
+        source "$file_to_source"
+        [ $? -ne 0 ] && throwError 111 "$file_to_source"
+
+        weights="$(wrapWeightAll "$scripts_dir" "$file_with_config" "$unique_prefix")"
+        [ $? -ne 0 ] && throwError 122 "$weights"
+    fi
+
+    file_to_source="$current_dir/get-sequence/main.sh"
+    source "$file_to_source"
+    [ $? -ne 0 ] && throwError 111 "$file_to_source"
+    (
+        getSequence "$scripts_dir" "$file_with_config" "$unique_prefix" "$wrap_name" "$weights"
+    )
+    exit_code=$?
+    [ $exit_code -ne 0 ] && throwError 124 "Exit code was: $exit_code"
 }
 
 function forRemove {
