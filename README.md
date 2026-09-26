@@ -187,7 +187,7 @@ You can use relative path depending where your `main.sh` is located. You are fre
 | Command | Explanation | Syntax |
 |---|---|---|
 | `get name` | Retrieves the name of the image or container associated with the specified configuration and wrap. | `./main.sh get name image <wrap_name>`<br>or<br>`./main.sh get name container <wrap_name>` |
-| `get sequence` | Retrieves the basedOn sequence of some wrap. | `./main.sh get sequence <wrap_name>` |
+| `get sequence` | Retrieves the basedOn sequence of some wrap. By default uses weights to sort the sequence, unless `--no-weight` is provided. | `./main.sh get sequence [--no-weight] <wrap_name>` |
 | `resolve-sequence` | Makes a new file with resolved sequence based on mentioned wrap. | `./main.sh resolve-sequence <wrap_name> <file_for_new_config>` |
 | `remove` | Removes the image or container associated with the specified configuration and wrap. | `./main.sh remove <container\|image\|both> <wrap_name> [--force]`<br>or<br>`./main.sh remove all [<container\|image\|both>] [--force]` |
 | `init` | Initializes resources (such as images or containers) based on the configuration and wrap. | `./main.sh init <wrap_name>` |
