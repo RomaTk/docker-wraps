@@ -43,6 +43,9 @@ function throwError {
         121)
             echo "No new file with config provided" >&2
             ;;
+        122)
+            echo "<- Problem within wrapWeightAll function" >&2
+            ;;
         *)
             echo "Unknown error" >&2
             exit 1

@@ -12,6 +12,7 @@ function resolveSequence {
 
     local file_to_source
     local sequence
+    local weights
     local last_action
 
     file_to_source="$current_dir/utils.sh"
@@ -45,7 +46,14 @@ function resolveSequence {
     source "$file_to_source"
     [ $? -ne 0 ] && throwError 111 "$file_to_source"
 
-    sequence="$(getSequence "$scripts_dir" "$file_with_config" "$unique_prefix" "$wrap_name")"
+    file_to_source="$scripts_dir/command-work/wrapweight/main.sh"
+    source "$file_to_source"
+    [ $? -ne 0 ] && throwError 111 "$file_to_source"
+
+    weights="$(wrapWeightAll "$scripts_dir" "$file_with_config" "$unique_prefix")"
+    [ $? -ne 0 ] && throwError 122 "$weights"
+
+    sequence="$(getSequence "$scripts_dir" "$file_with_config" "$unique_prefix" "$wrap_name" "$weights")"
     [ $? -ne 0 ] && throwError 112 "$sequence"
 
     last_action="$(cp "$file_with_config" "$new_file_with_config")"
