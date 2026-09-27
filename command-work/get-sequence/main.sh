@@ -45,21 +45,29 @@ function getSequence {
     source "$file_to_source"
     [ $? -ne 0 ] && throwError 111 "$file_to_source"
 
-    sequence="$(getItemsForSequence "$wrap_name")"
-    [ $? -ne 0 ] && throwError 114 "$sequence"
-
-    sequence="$(goThrewSequence "$sequence")"
-    [ $? -ne 0 ] && throwError 115 "$sequence"
-
-    sequence="$(sortSequence "$sequence")"
-    [ $? -ne 0 ] && throwError 119 "$sequence"
-
-    sequence="$(removeIsAnalysed "$sequence")"
-    [ $? -ne 0 ] && throwError 121 "$sequence"
-
     if [[ -n "$wrap_weights" && "$wrap_weights" != "null" && "$wrap_weights" != "{}" ]]; then
+        sequence="$(
+            source "$scripts_dir/command-work/get-sequence/main.sh"
+            getSequence "$scripts_dir" "$file_with_config" "$unique_prefix" "$wrap_name"
+        )"
+        [ $? -ne 0 ] && throwError 114 "$sequence"
+
+        sequence="$(echo "$sequence" | jq -c '.')"
+
         sequence="$(sortByWrapWeights "$sequence" "$wrap_weights")"
         [ $? -ne 0 ] && throwError 135 "$sequence"
+    else
+        sequence="$(getItemsForSequence "$wrap_name")"
+        [ $? -ne 0 ] && throwError 114 "$sequence"
+
+        sequence="$(goThrewSequence "$sequence")"
+        [ $? -ne 0 ] && throwError 115 "$sequence"
+
+        sequence="$(sortSequence "$sequence")"
+        [ $? -ne 0 ] && throwError 119 "$sequence"
+
+        sequence="$(removeIsAnalysed "$sequence")"
+        [ $? -ne 0 ] && throwError 121 "$sequence"
     fi
 
     echo "$sequence" | jq '.'
