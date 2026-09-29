@@ -59,7 +59,7 @@ function throwError {
             echo "Problem within init function" >&2
             ;;
         133)
-            echo "Problem within runnung docker command function" >&2
+            echo "Problem within running executeBuildCommand function" >&2
             ;;
         134)
             echo "Problem with converting build options to string" >&2

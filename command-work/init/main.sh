@@ -269,8 +269,11 @@ function init {
     (runBeforeBuildDo)
     [ $? -ne 0 ] && throwError 155
 
-    echo "BUILD COMMAND: $final_command"
-    (eval "$final_command")
+    file_to_source="$current_dir/execute-build-command/main.sh"
+    source "$file_to_source"
+    [ $? -ne 0 ] && throwError 111 "$file_to_source"
+
+    (executeBuildCommand "$scripts_dir" "$final_command")
     exit_code=$?
     [ $exit_code -ne 0 ] && throwError 133 "Exit code was: $exit_code"
 
