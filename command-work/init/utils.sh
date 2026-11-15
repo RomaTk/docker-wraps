@@ -44,7 +44,7 @@ function throwError {
             echo "Problem within getContext function" >&2
             ;;
         124)
-            echo "Incorrect config configuration"
+            echo "Incorrect config configuration" >&2
             ;;
         125)
             echo "Problem within getBasedOnTag function" >&2
@@ -104,7 +104,7 @@ function throwError {
             echo "Problem with moving bash array to jq array" >&2
             ;;
         153)
-            echo "Problem withing removeSomeWrapFromRunBeforeBuild function" >&2
+            echo "Problem within removeSomeWrapFromRunBeforeBuild function" >&2
             ;;
         154)
             echo "Problem within runBeforeBuildDoForSomeWrap function" >&2
@@ -125,7 +125,7 @@ function throwError {
             echo "Problem with jq function to extract basedOnList" >&2
             ;;
         161)
-            echo "Unexpected problem, basedOnLists aren\`t same" >&2
+            echo "Unexpected problem, basedOnLists aren't same" >&2
             ;;
         162)
             echo "Problem with getting basedOnLists length" >&2
@@ -134,10 +134,10 @@ function throwError {
             echo "Problem with getting basedOnLists length" >&2
             ;;
         164)
-            echo "Problem with getting getting data from run parsed object" >&2
+            echo "Problem with getting data from run parsed object" >&2
             ;;
         165)
-            echo "Problem with getting setting data inside run parsed object" >&2
+            echo "Problem with setting data inside run parsed object" >&2
             ;;
         166)
             echo "Problem within insertRunAfterBuildToRunBeforeBuild function" >&2

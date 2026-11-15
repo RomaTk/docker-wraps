@@ -3,15 +3,16 @@
 # Function to convert a relative path to an absolute path
 function abspath {
   local path="$1"
+  local cwd
 
   # If the path is already absolute, return it
   if [[ "$path" == /* ]]; then
     echo "$path"
-    return
+    exit 0
   fi
 
   # Get the current working directory
-  local cwd=$(pwd)
+  cwd=$(pwd)
   [ $? -ne 0 ] && exit 1
 
   # Handle paths starting with './'

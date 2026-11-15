@@ -1,92 +1,89 @@
 # DOCKER WRAPS
 
-This lib implements docker wraps, where wrap is (image + container + related scripts in user env).
+This library implements **docker wraps**, where a wrap combines an image, a container, and related lifecycle scripts in the user environment.
 
-Tested in ubuntu. But, may work with other systems. This lib use `jq` and `docker`, which is going to be installed by script if not installed yet. Also all script are written on `bash`, as it is default for development and clear to check what it does.
+Tested on Ubuntu, though it may work on other Linux distributions. It relies on `jq` and `docker` (with `docker buildx` for image builds), which are checked/installed automatically by the setup scripts if not already present. All scripts are written in `bash` to keep the environment clean and avoid unnecessary runtime dependencies.
 
-Why `bash` - not to install unnecessary packages and keep the environment clean.
+## Wrap Lifecycle Commands
 
-## Within each wrap organized logic for images and containers:
+Each wrap organizes lifecycle logic for images and containers:
 
-### init
+### `init`
 
-1) `build.run.before` with all **basedOn wraps taking into account**, depends on is it asAbstact or not
-2) Building image
-3) If new image have diffent id and not used 
-    1) Remove old one
-4) `build.run.after`
+1) Runs `build.run.before` hooks, **taking all `basedOn` wraps into account** (depending on whether `asAbstract` is enabled)
+2) Builds the image (using `docker buildx build`, or tags an existing base image when `to_rename` optimization applies)
+3) If the new image has a different ID and the old image is dangling/unused:
+    1) Removes the old image (and its associated container if needed)
+4) Runs `build.run.after` hooks
 
-### start
+### `start`
 
-1) Init image
-2) If container doesn`t exist
-    1) Run container with all **basedOn wraps taking into account**
-3) If container exists
-    1) Compare container image id with current image id
-    2) If it is different
-        1) Remove container with all **basedOn wraps taking into account**
-        2) Do all steps as for container not existing
-    3) If it is same
-        1) If container running
-            1) Do exec on container with `run.args` and `run.commands` and `other same options as for run `
-        2) If container not running
-            1) Start container with all **basedOn wraps taking into account**
+1) Initializes the image (`init`)
+2) If the container does not exist:
+    1) Runs a new container, **taking all `basedOn` wraps into account**
+3) If the container exists:
+    1) Compares the container's image ID with the current image ID
+    2) If different:
+        1) Removes the container, **taking all `basedOn` wraps into account**
+        2) Creates and runs a new container
+    3) If identical:
+        1) If the container is running:
+            1) Executes `docker exec` on the container with `run.entrypoint.args`, `run.entrypoint.commands`, and matching `run` options
+        2) If the container is not running:
+            1) Starts the existing container, **taking all `basedOn` wraps into account**
 
-### stop
+### `stop`
 
-1) If container running
-    1) Stop container with all **basedOn wraps taking into account**
+1) If the container is running:
+    1) Stops the container using resolved `stop` options (`signal`, `timeout`, `options`)
 
-### kill
+### `kill`
 
-1) If container running
-    1) Kill container with all **basedOn wraps taking into account**
+1) If the container is running:
+    1) Forcefully stops the container using resolved `kill` options (`signal`, `options`)
 
-### remove
+### `remove`
 
 #### Container
 
-1) If container running
-    1) Kill wrap
-2) Remove container
-3) If no image of the same wrap
-    1) Clean
+1) If the container is running:
+    1) Kills the container
+2) Removes the container
+3) If no image exists for the same wrap:
+    1) Runs `clean` commands
 
 #### Image
 
-1) Remove image
-2) If no container of the same wrap
-    1) Clean
+1) Removes the image
+2) If no container exists for the same wrap:
+    1) Runs `clean` commands
 
-### get
+### `get`
 
-Returns name of image or container taking into account `uniquePrefix`
+Returns the resolved image/container name (with `uniquePrefix`) or the resolved `basedOn` dependency sequence.
 
+## `BASED_ON`
 
-## BASED_ON
-
-Each dockerfile that will use basedOn should be started with this lines if based on is expected to work correctly.
+Each `Dockerfile` that uses `basedOn` should start with the following lines so base image inheritance works properly:
 
 ```docker
 ARG BASED_ON=""
 FROM $BASED_ON
 ```
 
-### asAsbatract
+### `asAbstract`
 
-Used when image not created and just build options is forwarded, can be used only if wrap based on another wrap.
-<br>
-`build` options will be executed depending on this property, so if asAbstact - not used for image before, but forwarded to image with `basedOn.asAbstact` equals to true. That is what **basedOn wraps taking into account** means.
+Marks a `basedOn` reference as an abstract configuration template rather than a pre-built image. When `asAbstract` is `true`, no intermediate Docker image is built for that wrap; instead, its `build` options, `run` configuration, and lifecycle hooks are inherited and forwarded to the dependent wrap.
 
-### precreate
+### `precreate`
 
-Means that wrap will be used, so uniquePrefix will be added, properties forwarded.
+Indicates that the referenced `basedOn` wrap is defined in the same configuration file and should be built/created first using the project's `uniquePrefix`. Its properties are inherited and forwarded to the dependent wrap.
 
-### Array of basedOn config schemas
+### Array of `basedOn` config schemas
 
-If you mention array - not the object in the `basedOn` property - it will be treated as sequence of basedOn, where the first element is the closest to current wrap (so it will be used as BASED_ON argument), and the last one - the farthest. Moreover based on, elements closest to current wrap have higher priority than basedOns inside another basedOn wrap.
+When `basedOn` is an array instead of a single object, it defines an ordered inheritance chain where the **first** element is closest to the current wrap (used as the direct `BASED_ON` build argument) and the **last** element is the farthest ancestor. Elements closer to the current wrap take higher priority when merging configuration options.
 
-You can use `get sequence` command to see the full sequence of basedOns. Or resolve it to a new file using `resolve-sequence` command to see config by which the wrap will be created.
+You can use `get sequence` to inspect the full flattened `basedOn` sequence (by default, contiguous `precreate`/`asAbstract` items are sorted by wrap weight descending via `wrapweight all` so shared dependencies are ordered consistently; pass `--no-weight` to preserve raw traversal order), or `resolve-sequence` to materialize the merged configuration into a standalone JSON file.
 
 ## Config file
 
@@ -176,11 +173,11 @@ You can use `get sequence` command to see the full sequence of basedOns. Or reso
 
 ## How to use
 
-Commands below use `main.sh`, so that file you need to create using `example.sh` in the folder where you would like to execute it.
+Commands below use `main.sh`, which you can create using [example.sh](./example.sh) in the folder where you would like to execute it.
 
-Also you need to create config file, you can use schema above, or use `example.json` as a template.
+You also need a configuration file; you can follow the schema above or use [example.json](./example.json) as a template.
 
-You can use relative path depending where your `main.sh` is located. You are free on choosing names. Also check that newly create file has right permissions. `chmod +x ./main.sh` is recommended.
+You can use a relative path depending on where your `main.sh` is located. Make sure the newly created script has execute permissions (`chmod +x ./main.sh` is recommended).
 
 ## Command explanations and syntax
 

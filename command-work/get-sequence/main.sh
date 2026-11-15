@@ -171,12 +171,12 @@ function goThrewSequence {
     local new_items
     local new_sequence
 
-    local changeMade="true"
+    local change_made="true"
     local items_data
     local i
 
-    while [[ "$changeMade" == "true" ]]; do
-        changeMade="false"
+    while [[ "$change_made" == "true" ]]; do
+        change_made="false"
         new_sequence="[]"
 
         # Batch extract fields for all items to minimize jq calls in the loop
@@ -212,7 +212,7 @@ function goThrewSequence {
                 new_sequence="$(echo "$new_sequence" | jq -c --argjson n "$new_items" --argjson i "$item" '. + $n + [$i]')"
                 [ $? -ne 0 ] && throwError 128 "Error concatenating new items in goThrewSequence: $new_sequence"
 
-                changeMade="true"
+                change_made="true"
             else
                 # Append single item
                 new_sequence="$(echo "$new_sequence" | jq -c --argjson i "$item" '. + [$i]')"

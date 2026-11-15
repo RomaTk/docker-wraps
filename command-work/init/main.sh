@@ -352,7 +352,7 @@ function renameImageCreateCommandString {
     source_image=$(getName "$unique_prefix" "$rename_with" "image")
     [ $? -ne 0 ] && throwError 168 "$source_image"
     target_image=$(getName "$unique_prefix" "$initial_wrap_name" "image")
-    [ $? -ne 0 ] && throwError 168 "$source_image"
+    [ $? -ne 0 ] && throwError 168 "$target_image"
 
 
     echo "docker tag \"${source_image}\" \"${target_image}\""
@@ -398,8 +398,7 @@ function getDataForBuild {
     [ $? -ne 0 ] && throwError 121 "$context"
 
     if [[ -z "$context" ]]; then
-        echo "Context could not be empty"
-        throwError 124 
+        throwError 124 "Context could not be empty"
     fi
 
     context=$(abspath "$context")

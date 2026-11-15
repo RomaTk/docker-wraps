@@ -38,7 +38,7 @@ function throwError {
             echo "Not mentioned command" >&2
             ;;
         120)
-            echo "Icorrect length of command arguments" >&2
+            echo "Incorrect length of command arguments" >&2
             ;;
         121)
             echo "Can not get mentioned data" >&2

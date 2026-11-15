@@ -1,7 +1,10 @@
+#!/bin/bash
+
 function getCurrentImageId {
     local file_to_source
     local image_name
     local image_id_from_image
+    local image_info
    
 
     file_to_source="$scripts_dir/command-work/get-name/main.sh"

@@ -6,14 +6,17 @@ function wrapWeightAll {
     local unique_prefix="$3"
 
     local file_to_source="$scripts_dir/command-work/wrapweight/utils.sh"
-    source "$file_to_source"
-    [ $? -ne 0 ] && exit 111
-
     local wrap_names
     local wrap_names_length
     local i
     local wrap_name
     local weights="{}"
+
+    source "$file_to_source"
+    if [ $? -ne 0 ]; then
+        echo "Problem with sourcing $file_to_source" >&2
+        exit 111
+    fi
 
     file_to_source="$scripts_dir/config-file-work/get-all-wrap-names.sh"
     source "$file_to_source"
@@ -104,4 +107,5 @@ function calcWeight {
     done
 
     echo "$current_weights"
+    exit 0
 }
