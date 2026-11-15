@@ -1,3 +1,5 @@
+#!/bin/bash
+
 function remove {
     local scripts_dir="$1"
     local file_with_config="$2"

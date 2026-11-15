@@ -25,7 +25,7 @@ function main {
 
     file_to_source="$scripts_dir/command-work/main.sh"
     source "$file_to_source"
-    [ $? -ne 0 ] && throwError 111 "$last_action"
+    [ $? -ne 0 ] && throwError 111 "$file_to_source"
     
     (
         commandWork "$scripts_dir" "$file_with_config" "$command"

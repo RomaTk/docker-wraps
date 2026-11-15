@@ -57,7 +57,7 @@ function implementObject {
 
     local action
     local value
-    local basedOnScope
+    local based_on_scope
 
     local is_key_exists
     local array_by_key
@@ -89,7 +89,7 @@ function implementObject {
         exit 1
     fi
 
-    basedOnScope=$(echo "$run_before_builds" | jq -r ".basedOnScope")
+    based_on_scope=$(echo "$run_before_builds" | jq -r ".basedOnScope")
     if [ $? -ne 0 ]; then
         echo "Unknown error in extracting key value" >&2
         exit 1
@@ -98,14 +98,14 @@ function implementObject {
 
     case $action in
         "add")
-            all_run_before_builds=$(implementSpecificData "$value" "$all_run_before_builds" "string" "$basedOnScope")
+            all_run_before_builds=$(implementSpecificData "$value" "$all_run_before_builds" "string" "$based_on_scope")
             if [ $? -ne 0 ]; then
                 echo "Unknown error in implementing string with implementRunAfterBuild function" >&2
                 exit 1
             fi
             ;;
         "remove")
-            is_key_exists=$(echo "$all_run_before_builds" | jq -r "has(\"$basedOnScope\")")
+            is_key_exists=$(echo "$all_run_before_builds" | jq -r "has(\"$based_on_scope\")")
             [ $? -ne 0 ] && exit 1
 
             if [[ "$is_key_exists" == "false" ]]; then
@@ -113,7 +113,7 @@ function implementObject {
                 exit 0
             fi
 
-            array_by_key=$(echo "$all_run_before_builds" | jq -r ".\"$basedOnScope\"")
+            array_by_key=$(echo "$all_run_before_builds" | jq -r ".\"$based_on_scope\"")
             [ $? -ne 0 ] && exit 1
 
             array_by_key=$(echo "$array_by_key" | jq -r ". - [ \"${value//\"/\\\"}\" ]")
@@ -123,10 +123,10 @@ function implementObject {
             [ $? -ne 0 ] && exit 1
 
             if [[ "$length_of_array" -eq 0 ]]; then
-                all_run_before_builds=$(echo "$all_run_before_builds" | jq -r "del(.\"$basedOnScope\")")
+                all_run_before_builds=$(echo "$all_run_before_builds" | jq -r "del(.\"$based_on_scope\")")
                 [ $? -ne 0 ] && exit 1
             else
-                all_run_before_builds=$(echo "$all_run_before_builds" | jq -r ".\"$basedOnScope\" = $array_by_key ")
+                all_run_before_builds=$(echo "$all_run_before_builds" | jq -r ".\"$based_on_scope\" = $array_by_key ")
                 [ $? -ne 0 ] && exit 1
             fi
             ;;

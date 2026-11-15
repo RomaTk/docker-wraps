@@ -204,7 +204,7 @@ function getDataForRun {
 }
 
 function convertVolumesToOptions {
-    local lengthOfVolumes
+    local length_of_volumes
     local i
     local volume_data
     local type
@@ -219,10 +219,10 @@ function convertVolumesToOptions {
     source "$file_to_source"
     [ $? -ne 0 ] && throwError 111 "$file_to_source"
 
-    lengthOfVolumes=$(echo "$volumes" | jq -r ". | length")
+    length_of_volumes=$(echo "$volumes" | jq -r ". | length")
     [ $? -ne 0 ] && throwError 1 "Error within jq getting length of volumes"
 
-    for (( i=0; i<lengthOfVolumes; i++ )); do
+    for (( i=0; i<length_of_volumes; i++ )); do
 
         volume_data=$(echo "$volumes" | jq -r ".[$i]")
         [ $? -ne 0 ] && throwError 1 "Error within jq getting volume"

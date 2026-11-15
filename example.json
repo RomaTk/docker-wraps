@@ -1,5 +1,5 @@
 {
-    "uniquePrefix": "some-unuique-prefix",
+    "uniquePrefix": "some-unique-prefix",
     "wraps": {
         "docker": {
             "basedOn": {
@@ -74,7 +74,7 @@
                     }
                 ],
                 "entrypoint": {
-                    "tool": "python as example, or bush",
+                    "tool": "python as example, or bash",
                     "args": [
                         "-a"
                     ],

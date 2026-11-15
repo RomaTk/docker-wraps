@@ -1,3 +1,5 @@
+#!/bin/bash
+
 function clean {
     local scripts_dir="$1"
     local file_with_config="$2"
@@ -6,6 +8,7 @@ function clean {
 
     local config_dir="$scripts_dir/config-file-work"
 
+    local file_to_source
     local wrap
     local clean_array
     local length
@@ -45,7 +48,7 @@ function clean {
 
     for (( i=0; i<length; i++ )); do
         command=$(echo "$clean_array" | jq -r ".[$i]")
-        echo "CLEAN commnand: $command"
+        echo "CLEAN command: $command"
         (eval "$command")
         [ $? -ne 0 ] && throwError 121 "$command"
     done

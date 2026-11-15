@@ -1,3 +1,5 @@
+#!/bin/bash
+
 function getName {
     local unique_prefix="$1"
     local wrap_name="$2"
